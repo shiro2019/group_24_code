@@ -36,6 +36,10 @@ def call_kwargs(cfg):
     if method == "sdxl_lightning":
         # Each Lightning checkpoint must run with its own number of steps.
         steps = int(cfg["lightning_steps"])
+        if steps == 1 and not cfg.get("exploratory"):
+            # The 1-step checkpoint is experimental (model card); keep it out of the main results.
+            raise ValueError(f"[{cfg['name']}] lightning_steps=1 is exploratory only; put it in a "
+                             "separate config file with exploratory: true")
         if params.get("num_inference_steps", steps) != steps:
             raise ValueError(f"[{cfg['name']}] num_inference_steps must equal lightning_steps={steps}")
         params["num_inference_steps"] = steps

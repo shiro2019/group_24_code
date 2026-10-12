@@ -157,18 +157,19 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     cfg = load_yaml(args.config)
-    scorers = {}
-    if "clip" in wanted:
-        scorers["clip_score"] = ClipScorer(device)
-    if "imagereward" in wanted:
-        scorers["image_reward"] = ImageRewardScorer(device)
-
     points = [p for p in expand_grid(cfg) if not args.only or p["name"] == args.only]
     if not points:
         raise SystemExit(f"--only {args.only!r} matches no config point")
     conflicts = [c for c in (check_identity(run_dir(p), p) for p in points) if c]
     if conflicts:
         raise SystemExit("\n".join(conflicts) + "\nthese folders do not match the config; not scored")
+
+    # Load the scoring models only after the folders have been checked.
+    scorers = {}
+    if "clip" in wanted:
+        scorers["clip_score"] = ClipScorer(device)
+    if "imagereward" in wanted:
+        scorers["image_reward"] = ImageRewardScorer(device)
 
     incomplete = []
     for point in points:
