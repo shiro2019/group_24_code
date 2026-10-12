@@ -1,0 +1,13 @@
+# E2 baseline sweep on the tuning split (docs/plan.md section 3).
+experiment: e2
+split: tune
+seeds: [0]
+method: sdxl_base
+resolution: 1024
+dtype: fp16
+models:
+  stabilityai/stable-diffusion-xl-base-1.0: 462165984030d82259a11f4367a4eed129e94a7b
+timestep_spacing: trailing
+grid:
+  num_inference_steps: [4, 8, 15, 25, 50]
+  guidance_scale: [5.0, 7.5]
