@@ -24,7 +24,7 @@ conda env create -f environment.yml
 conda activate ca6127
 ```
 
-库版本在 10/13 冒烟测试通过后由 A 固定到 `environment.yml`。
+`environment.yml` 中的版本已在 TC2 集群上验证。torch 必须用 CUDA 12.8 版本（集群驱动不支持 CUDA 13），transformers 必须用 4.x（ImageReward 不兼容 5.x），不要单独升级这两个包。
 
 ## 在集群上运行
 

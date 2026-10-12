@@ -5,18 +5,26 @@ dependencies:
   - python=3.10
   - pip
   - pip:
-      # Versions to be pinned after the 10/13 smoke test
-      - torch
-      - diffusers
-      - transformers
-      - accelerate
-      - peft
-      - safetensors
-      - clean-fid
-      - torchmetrics
-      - lpips
-      - image-reward
-      - pandas
-      - matplotlib
-      - pyyaml
-      - tqdm
+      # The TC2 driver (570) supports CUDA <= 12.8, so torch comes from the cu128 index.
+      - --extra-index-url https://download.pytorch.org/whl/cu128
+      - torch==2.11.0+cu128
+      - torchvision==0.26.0+cu128
+      # ImageReward needs transformers 4.x, which in turn needs huggingface-hub < 1.0.
+      - transformers==4.57.6
+      - huggingface-hub==0.36.2
+      - diffusers==0.39.0
+      - accelerate==1.15.0
+      - peft==0.21.2
+      - safetensors==0.8.0
+      - clean-fid==0.1.35
+      - torchmetrics==1.9.0
+      - lpips==0.1.4
+      - image-reward==1.5
+      - openai-clip==1.0.1
+      - datasets==4.8.5
+      - numpy==2.2.6
+      - pillow==12.3.0
+      - pandas==2.3.3
+      - matplotlib==3.10.9
+      - pyyaml==6.0.3
+      - tqdm==4.70.1
