@@ -12,6 +12,7 @@ import time
 
 import torch
 import yaml
+from PIL import Image
 
 from src.common import env_info, expand_grid, load_yaml, now, read_prompts, run_dir
 from src.pipelines import UNetCallCounter, build_pipeline, pipeline_key
@@ -27,6 +28,18 @@ def call_kwargs(cfg):
         kwargs.setdefault("height", res)
         kwargs.setdefault("width", res)
     return kwargs
+
+
+def save_image(image, out, filename, prompt_index, cfg):
+    """Metrics are computed at 512px, so images are stored at save_size to fit the disk
+    quota; the first full_res_first_n prompts also keep a full-resolution copy for crops."""
+    save_size = cfg.get("save_size", 512)
+    if prompt_index < cfg.get("full_res_first_n", 20):
+        (out / "full").mkdir(exist_ok=True)
+        image.save(out / "full" / filename)
+    if save_size and image.size != (save_size, save_size):
+        image = image.resize((save_size, save_size), Image.BICUBIC)
+    image.save(out / filename)
 
 
 def write_run_meta(out, cfg, resolved):
@@ -82,7 +95,7 @@ def main():
                 start = time.perf_counter()
                 image = pipe(prompt=p["prompt"], generator=generator, **kwargs).images[0]
                 elapsed = time.perf_counter() - start
-                image.save(out / f"{p['prompt_id']}_{seed}.png")
+                save_image(image, out, f"{p['prompt_id']}_{seed}.png", prompts.index(p), point)
                 record = {"prompt_id": p["prompt_id"], "seed": seed, "seconds": round(elapsed, 4)}
                 record.update(counter.summary())
                 log.write(json.dumps(record) + "\n")

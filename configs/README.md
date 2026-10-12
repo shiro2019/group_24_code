@@ -14,6 +14,8 @@
 | `lightning_steps` | Lightning 使用哪个步数的 checkpoint（1 / 2 / 4 / 8） |
 | `lora_fuse`、`lora_scale` | LCM-LoRA 是否融合及 adapter scale；E3 用 `lora_fuse: false` |
 | `name` | 配置名，决定输出子目录；使用 `grid` 时自动生成 |
+| `save_size` | 保存尺寸，默认 512（指标都在 512 下计算，节省磁盘配额） |
+| `full_res_first_n` | 前 N 条 prompt 另存原尺寸图到 `full/`，默认 20，用于局部裁剪图 |
 | `params` | 直接传给 pipeline 的参数，如 `num_inference_steps`、`guidance_scale` |
 | `grid` | 参数网格，每个组合生成一个配置点 |
 | `pipeline_keys` | 列在这里的 `grid` 字段会覆盖顶层字段（如 `lightning_steps`、`lora_scale`），而不是 `params` |
