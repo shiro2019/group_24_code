@@ -20,7 +20,7 @@ LIGHTNING = "ByteDance/SDXL-Lightning"
 METHODS = ("sdxl_base", "lcm_lora", "sdxl_turbo", "sdxl_lightning")
 
 # Keys that change how the pipeline is built; a change forces a rebuild.
-PIPELINE_KEYS = ("method", "models", "lightning_steps", "lora_fuse", "lora_scale", "dtype")
+PIPELINE_KEYS = ("method", "models", "lightning_steps", "lora_fuse", "lora_scale", "dtype", "timestep_spacing")
 
 
 def pipeline_key(cfg):
@@ -76,7 +76,11 @@ def build_pipeline(cfg, device="cuda"):
         )
         resolved[SDXL_BASE] = _resolve(SDXL_BASE, cfg)
         if method == "sdxl_base":
-            pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
+            # "trailing" makes the first step start at t=999; SDXL's default "leading"
+            # spacing starts few-step sampling at a lower noise level than pure noise.
+            pipe.scheduler = DPMSolverMultistepScheduler.from_config(
+                pipe.scheduler.config, timestep_spacing=cfg.get("timestep_spacing", "trailing")
+            )
         else:
             pipe.scheduler = LCMScheduler.from_config(pipe.scheduler.config)
             pipe.load_lora_weights(LCM_LORA, adapter_name="lcm", revision=_rev(cfg, LCM_LORA))
@@ -92,6 +96,11 @@ def build_pipeline(cfg, device="cuda"):
 
     pipe = pipe.to(device)
     pipe.set_progress_bar_config(disable=True)
+    sched = pipe.scheduler.config
+    resolved["scheduler"] = {"class": type(pipe.scheduler).__name__, **{
+        k: sched.get(k) for k in ("timestep_spacing", "steps_offset", "prediction_type", "algorithm_type")
+        if k in sched
+    }}
     return pipe, resolved
 
 
@@ -109,7 +118,11 @@ def _resolve(repo, cfg):
 
 
 class UNetCallCounter:
-    """Counts real UNet forward calls, their batch sizes and timesteps for one image."""
+    """Counts real UNet forward calls, their batch sizes and timesteps for one image.
+
+    The hook keeps timesteps as tensors and converts them only in summary(), so it
+    does not force a GPU sync on every UNet call.
+    """
 
     def __init__(self, unet):
         self.calls = []
@@ -118,17 +131,18 @@ class UNetCallCounter:
     def _hook(self, module, args, kwargs):
         sample = args[0] if args else kwargs.get("sample")
         timestep = args[1] if len(args) > 1 else kwargs.get("timestep")
-        t = timestep.flatten()[0].item() if torch.is_tensor(timestep) else timestep
-        self.calls.append({"batch": int(sample.shape[0]), "t": float(t)})
+        t = timestep.detach().flatten()[0] if torch.is_tensor(timestep) else timestep
+        self.calls.append({"batch": int(sample.shape[0]), "t": t})
 
     def reset(self):
         self.calls = []
 
     def summary(self):
+        to_float = lambda t: float(t.item()) if torch.is_tensor(t) else float(t)
         return {
             "unet_calls": len(self.calls),
             "unet_batch_sizes": sorted({c["batch"] for c in self.calls}),
-            "timesteps": [c["t"] for c in self.calls],
+            "timesteps": [to_float(c["t"]) for c in self.calls],
         }
 
     def remove(self):

@@ -5,6 +5,7 @@
 Protocol (docs/plan.md section 4): batch size 1, fp16, warm-up first, timed from the
 pipeline call (text encoding) until the VAE-decoded tensor is ready, with
 torch.cuda.synchronize() on both sides. Run all methods on the same GPU type.
+Two-stage pipelines (E4) need their own driver that follows the same protocol.
 """
 
 import argparse
@@ -28,11 +29,11 @@ def main():
 
     cfg = load_yaml(args.config)
     device = "cuda"
-    for point in expand_grid(cfg):
-        if args.only and point["name"] != args.only:
-            continue
+    points = [p for p in expand_grid(cfg) if not args.only or p["name"] == args.only]
+    if not points:
+        raise SystemExit(f"--only {args.only!r} matches no config point")
+    for point in points:
         pipe, _ = build_pipeline(point, device)
-        counter = UNetCallCounter(pipe.unet)
         prompts = read_prompts(point)
         kwargs = call_kwargs(point)
         kwargs["output_type"] = "pt"
@@ -48,11 +49,17 @@ def main():
 
         for i in range(args.warmup):
             run(i)
+        # Count UNet calls in one separate, untimed run so the hook adds no overhead
+        # to the timed runs.
+        counter = UNetCallCounter(pipe.unet)
+        run(0)
+        calls = counter.summary()
+        counter.remove()
+
         torch.cuda.reset_peak_memory_stats()
-        counter.reset()
         times = [run(i) for i in range(args.runs)]
-        calls_per_image = len(counter.calls) / args.runs
-        batch_sizes = sorted({c["batch"] for c in counter.calls})
+        calls_per_image = calls["unet_calls"]
+        batch_sizes = calls["unet_batch_sizes"]
         q1, med, q3 = np.percentile(times, [25, 50, 75])
 
         base = {"experiment": point["experiment"], "split": point["split"], "method": point["method"],
@@ -68,7 +75,6 @@ def main():
         print(f"[{point['name']}] median {med:.3f}s, IQR {q3 - q1:.3f}s, "
               f"UNet calls/image {calls_per_image:g} (batch {batch_sizes})", flush=True)
 
-        counter.remove()
         del pipe
         torch.cuda.empty_cache()
 

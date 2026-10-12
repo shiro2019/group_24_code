@@ -18,7 +18,7 @@
 
 | 方法 | 加载方式 | Scheduler | 步数 | Guidance | 原生分辨率 | 注意事项 |
 | --- | --- | --- | --- | --- | --- | --- |
-| SDXL + DPM-Solver++（基线） | `stabilityai/stable-diffusion-xl-base-1.0` | `DPMSolverMultistepScheduler` | 4 / 8 / 15 / 25 / 50 | CFG 5.0 / 7.5，在调参集上选定 | 1024 | 全部是我们的设计选择，不是官方约束 |
+| SDXL + DPM-Solver++（基线） | `stabilityai/stable-diffusion-xl-base-1.0` | `DPMSolverMultistepScheduler`，`timestep_spacing="trailing"` | 4 / 8 / 15 / 25 / 50 | CFG 5.0 / 7.5，在调参集上选定 | 1024 | 全部是我们的设计选择，不是官方约束；用 trailing 是因为 SDXL 默认的 leading 间隔在低步数时不从 t=999 开始（4 步时首步为 t=801），会人为拉低少步数基线 |
 | LCM-LoRA | base + `latent-consistency/lcm-lora-sdxl`；主实验 `fuse_lora`，E3 不融合、用 `set_adapters` 设 scale | `LCMScheduler` | 2 / 4 / 6 / 8 | 关闭，或 1.5 / 2.0（官方范围 1.0–2.0） | 1024 | 融合后再改调用参数里的 scale 不起作用；E1 固定用默认 scale 1.0 |
 | SDXL-Turbo | `stabilityai/sdxl-turbo` | 管线默认 | 1 / 2 / 3 / 4 | 0.0（不用 CFG 和 negative prompt） | 512 | img2img 实际执行 `int(步数 × strength)` 步，须 ≥ 1 |
 | SDXL-Lightning | base + `ByteDance/SDXL-Lightning` 的 `sdxl_lightning_{2,4,8}step_unet` | `EulerDiscreteScheduler`，`timestep_spacing="trailing"` | 2 / 4 / 8，每个步数一个单独 checkpoint | 0 | 1024 | 不同步数是不同模型，不能当作同一模型的步数消融；1 步 checkpoint 需 `prediction_type="sample"`，只作探索 |
@@ -56,7 +56,7 @@
 | --- | --- |
 | 第一阶段 | SDXL-Turbo，1 步，512×512，guidance 0，草图 seed 列表固定 |
 | 放大 | 512→1024，bicubic 像素放大后 VAE 编码；“无精修”对照用同一张草图和同一放大方法 |
-| 第二阶段 | SDXL base img2img，`DPMSolverMultistepScheduler`，名义步数 10，strength 0.2 / 0.3 / 0.4 / 0.5，CFG 与基线选定值相同，加噪 seed 列表单独固定 |
+| 第二阶段 | SDXL base img2img，`DPMSolverMultistepScheduler`（trailing），名义步数 10，strength 0.2 / 0.3 / 0.4 / 0.5，CFG 与基线选定值相同，加噪 seed 列表单独固定 |
 | 记录 | 实际执行的 timestep 数、UNet forward 调用次数和每次调用的 batch size，以日志为准；`int(名义步数 × strength)` 只作预期值。CFG 是把条件与无条件分支拼成一个 batch 计算，不等于调用次数翻倍；报告 NFE 时写明计数方式 |
 | 对照组 | Turbo 4 步、Lightning 4 步、LCM 4 步、基线低步数，在同一种 GPU 上实测延迟 |
 | 比较方式 | 画质量–延迟曲线，不强行寻找延迟完全相同的点；1024 细节用固定位置的原尺寸裁剪图展示 |
