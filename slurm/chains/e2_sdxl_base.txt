@@ -1,0 +1,5 @@
+# E2 baseline sweep: 10 configs x 500 tuning prompts (~6.5 GPU hours on A40), then scoring.
+src.generate --config configs/e2/sdxl_base.yaml --shard 0 --num-shards 3
+src.generate --config configs/e2/sdxl_base.yaml --shard 1 --num-shards 3
+src.generate --config configs/e2/sdxl_base.yaml --shard 2 --num-shards 3
+src.evaluate --config configs/e2/sdxl_base.yaml --metrics clip,imagereward
