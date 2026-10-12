@@ -1,0 +1,22 @@
+name: ca6127
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+      # Versions to be pinned after the 10/13 smoke test
+      - torch
+      - diffusers
+      - transformers
+      - accelerate
+      - peft
+      - safetensors
+      - clean-fid
+      - torchmetrics
+      - lpips
+      - image-reward
+      - pandas
+      - matplotlib
+      - pyyaml
+      - tqdm
