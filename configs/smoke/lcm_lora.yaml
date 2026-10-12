@@ -1,0 +1,14 @@
+experiment: smoke
+split: tune
+limit: 10
+seeds: [0]
+method: lcm_lora
+resolution: 1024
+dtype: fp16
+models: {}
+lora_fuse: true
+lora_scale: 1.0
+name: steps4_cfg0
+params:
+  num_inference_steps: 4
+  guidance_scale: 0.0

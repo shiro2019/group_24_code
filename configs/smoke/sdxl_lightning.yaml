@@ -1,0 +1,12 @@
+experiment: smoke
+split: tune
+limit: 10
+seeds: [0]
+method: sdxl_lightning
+resolution: 1024
+dtype: fp16
+models: {}
+lightning_steps: 4
+name: ckpt4_steps4
+params:
+  guidance_scale: 0.0

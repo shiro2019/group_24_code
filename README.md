@@ -26,6 +26,26 @@ conda activate ca6127
 
 库版本在 10/13 冒烟测试通过后由 A 固定到 `environment.yml`。
 
+## 在集群上运行
+
+```bash
+git clone https://github.com/shiro2019/group_24_code.git && cd group_24_code
+bash slurm/setup_env.sh                                  # 只需一次：创建 conda 环境和 logs/
+sbatch --job-name=data slurm/job.sbatch src.prepare_data  # 只需一次：COCO 划分与 FID 参考图
+sbatch slurm/smoke.sbatch                                 # 冒烟测试：四个方法各 10 张图并打分
+```
+
+常用命令（都在仓库根目录提交）：
+
+```bash
+sbatch --job-name=e2-base slurm/job.sbatch src.generate --config configs/e2/sdxl_base.yaml
+sbatch --job-name=e2-base-shard0 slurm/job.sbatch src.generate --config configs/e2/sdxl_base.yaml --shard 0 --num-shards 2
+sbatch --job-name=eval slurm/job.sbatch src.evaluate --config configs/e2/sdxl_base.yaml --metrics clip,imagereward
+sbatch --job-name=timing --nodelist=TC2N07 slurm/job.sbatch src.timing --config configs/e1/sdxl_base.yaml
+```
+
+生成可中断重跑，已存在的图片会跳过；指标追加到 `outputs/metrics/metrics.csv`。配置字段见 [configs/README.md](configs/README.md)。
+
 ## 协作流程
 
 1. 不直接向 `main` 推送；每人在自己的分支开发，分支名用 `<角色>/<内容>`，例如 `a/eval-pipeline`、`b/lcm-sweep`。

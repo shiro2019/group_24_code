@@ -31,3 +31,6 @@ error_*.err
 Thumbs.db
 .vscode/
 .idea/
+
+# Job logs
+logs/

@@ -1,0 +1,12 @@
+experiment: smoke
+split: tune
+limit: 10
+seeds: [0]
+method: sdxl_base
+resolution: 1024
+dtype: fp16
+models: {}
+name: steps25_cfg5.0
+params:
+  num_inference_steps: 25
+  guidance_scale: 5.0
