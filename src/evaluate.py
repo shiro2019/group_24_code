@@ -80,8 +80,8 @@ def _patch_transformers_for_imagereward():
     # ImageReward imports helpers that newer transformers moved to pytorch_utils.
     import transformers.modeling_utils as mu
     import transformers.pytorch_utils as pu
-    for name in ("apply_chunking_to_forward", "find_pruneable_heads_and_prune_linear_layer",
-                 "prune_linear_layer"):
+    for name in ("apply_chunking_to_forward", "find_pruneable_heads_and_indices",
+                 "find_pruneable_heads_and_prune_linear_layer", "prune_linear_layer"):
         if not hasattr(mu, name) and hasattr(pu, name):
             setattr(mu, name, getattr(pu, name))
 
