@@ -21,11 +21,12 @@ import torch
 from PIL import Image
 
 from src.common import (
-    DATA_DIR, append_metrics, expand_grid, hardware_tag, load_yaml, now, read_prompts, run_dir,
+    DATA_DIR, append_metrics, check_identity, expand_grid, load_yaml, now, read_prompts, run_dir,
 )
 
 EVAL_SIZE = 512
 CLIP_MODEL = "openai/clip-vit-large-patch14"
+CLIP_REVISION = "32bd64288804d66eefd0ccbe215aa642df71cc41"
 IMAGEREWARD_MODEL = "ImageReward-v1.0"
 
 
@@ -51,9 +52,9 @@ class ClipScorer:
 
     def __init__(self, device):
         from transformers import CLIPModel, CLIPProcessor
-        self.model = CLIPModel.from_pretrained(CLIP_MODEL).to(device).eval()
-        # Pin the slow processor so scores do not shift if the library default changes.
-        self.processor = CLIPProcessor.from_pretrained(CLIP_MODEL, use_fast=False)
+        self.model = CLIPModel.from_pretrained(CLIP_MODEL, revision=CLIP_REVISION).to(device).eval()
+        # Pin the slow (non-"fast") processor so scores do not shift if the library default changes.
+        self.processor = CLIPProcessor.from_pretrained(CLIP_MODEL, revision=CLIP_REVISION, use_fast=False)
         self.device = device
 
     @torch.no_grad()
@@ -126,13 +127,33 @@ def lpips_diversity(items, device):
     return float(np.mean(per_prompt)), len(per_prompt)
 
 
+METRICS = {"clip", "imagereward", "fid", "lpips"}
+
+
+def generation_hardware(out):
+    """GPU(s) that generated the images, from every shard's run_info file."""
+    gpus = set()
+    for path in out.glob("run_info_*.json"):
+        try:
+            with open(path, encoding="utf-8") as f:
+                gpus.add(json.load(f)["env"]["hardware"])
+        except (OSError, KeyError, ValueError):
+            continue
+    return "/".join(sorted(gpus)) or "unknown"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
     ap.add_argument("--metrics", default="clip,imagereward", help="comma list of clip,imagereward,fid,lpips")
     ap.add_argument("--only", help="only the grid point with this name")
+    ap.add_argument("--allow-partial", action="store_true",
+                    help="score folders even if some expected images are missing")
     args = ap.parse_args()
-    wanted = set(args.metrics.split(","))
+    wanted = {m.strip() for m in args.metrics.split(",") if m.strip()}
+    unknown = wanted - METRICS
+    if unknown:
+        ap.error(f"unknown metrics {sorted(unknown)}; choose from {sorted(METRICS)}")
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     cfg = load_yaml(args.config)
@@ -142,16 +163,28 @@ def main():
     if "imagereward" in wanted:
         scorers["image_reward"] = ImageRewardScorer(device)
 
-    for point in expand_grid(cfg):
-        if args.only and point["name"] != args.only:
-            continue
+    points = [p for p in expand_grid(cfg) if not args.only or p["name"] == args.only]
+    if not points:
+        raise SystemExit(f"--only {args.only!r} matches no config point")
+    conflicts = [c for c in (check_identity(run_dir(p), p) for p in points) if c]
+    if conflicts:
+        raise SystemExit("\n".join(conflicts) + "\nthese folders do not match the config; not scored")
+
+    incomplete = []
+    for point in points:
         out = run_dir(point)
-        items = load_images(out, read_prompts(point), point["seeds"])
+        prompts = read_prompts(point)
+        items = load_images(out, prompts, point["seeds"])
+        expected = len(prompts) * len(point["seeds"])
+        if len(items) != expected:
+            print(f"[{point['name']}] {len(items)}/{expected} images found in {out}", flush=True)
+            if not args.allow_partial:
+                incomplete.append(point["name"])
+                continue
         if not items:
-            print(f"[{point['name']}] no images in {out}, skipped", flush=True)
             continue
         base = {"experiment": point["experiment"], "split": point["split"], "method": point["method"],
-                "config": point["name"], "hardware": hardware_tag(), "timestamp": now()}
+                "config": point["name"], "hardware": generation_hardware(out), "timestamp": now()}
         rows, per_image = [], {}
         for metric, scorer in scorers.items():
             values = per_image_scores(scorer, items)
@@ -171,6 +204,9 @@ def main():
                                         **{m: round(v[i], 4) for m, v in per_image.items()}}) + "\n")
         for r in rows:
             print(f"[{point['name']}] {r['metric']} = {r['value']} (n={r['n_samples']})", flush=True)
+
+    if incomplete:
+        raise SystemExit(f"not scored, images missing: {incomplete} (rerun generation or pass --allow-partial)")
 
 
 if __name__ == "__main__":
