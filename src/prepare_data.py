@@ -41,10 +41,13 @@ def download(url, dest):
 
 
 def extract(zip_path, member_prefix, target):
-    if target.exists():
+    """Extract once; a marker file written at the end makes an interrupted extraction rerun."""
+    marker = target.with_name(target.name + ".extracted")
+    if marker.exists():
         return
     with zipfile.ZipFile(zip_path) as zf:
         zf.extractall(COCO_DIR, [m for m in zf.namelist() if m.startswith(member_prefix)])
+    marker.touch()
 
 
 def first_captions():
@@ -76,7 +79,9 @@ def make_reference(rows, split):
         side = min(img.size)
         left, top = (img.width - side) // 2, (img.height - side) // 2
         img = img.crop((left, top, left + side, top + side)).resize((REF_SIZE, REF_SIZE), Image.BICUBIC)
-        img.save(dest)
+        tmp = dest.with_name(dest.name + ".tmp")
+        img.save(tmp, format="PNG")
+        tmp.replace(dest)  # never leave a truncated reference image behind
 
 
 def main():
