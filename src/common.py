@@ -4,6 +4,7 @@ import csv
 import itertools
 import json
 import platform
+import re
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -27,46 +28,112 @@ def load_yaml(path):
         return yaml.safe_load(f)
 
 
-def expand_grid(cfg):
-    """Yield one concrete config per point of cfg['grid'] (or cfg itself if no grid).
+# Top-level keys that change how a pipeline is built or how images are produced.
+TOP_LEVEL_KEYS = ("lightning_steps", "lora_fuse", "lora_scale", "resolution", "timestep_spacing")
 
-    Grid keys override cfg['params'] (sampling arguments) unless they are listed in
-    cfg['pipeline_keys'], in which case they override top-level keys such as
-    'lightning_steps' or 'lora_scale' that change how the pipeline is built.
-    """
+# Every key a config may use at the top level. A grid over any of these sets the
+# top-level value; every other grid key is a pipeline call argument (cfg['params']).
+CONFIG_KEYS = frozenset({
+    *TOP_LEVEL_KEYS, "experiment", "split", "prompts_file", "limit", "seeds", "method",
+    "models", "dtype", "name", "save_size", "full_res_first_n", "exploratory", "params", "grid",
+})
+
+# Fields that define what an output folder contains; generating or scoring a folder
+# whose config.yaml differs in any of them is refused.
+IDENTITY_KEYS = (
+    "method", "models", "dtype", "split", "prompts_file", "save_size",
+    *TOP_LEVEL_KEYS, "params",
+)
+
+NATIVE_RESOLUTION = {"sdxl_turbo": 512}
+
+_NAME_ORDER = (
+    ("lightning_steps", "ckpt"), ("num_inference_steps", "steps"),
+    ("guidance_scale", "cfg"), ("strength", "str"), ("lora_scale", "scale"),
+)
+
+
+def expand_grid(cfg):
+    """Yield one concrete config per point of cfg['grid'] (or cfg itself if no grid)."""
+    unknown = set(cfg) - CONFIG_KEYS
+    if unknown:
+        raise ValueError(f"unknown config keys {sorted(unknown)}; see configs/README.md")
+    if "timestep_spacing" in cfg and cfg.get("method") != "sdxl_base":
+        raise ValueError("timestep_spacing only applies to method sdxl_base")
     grid = cfg.get("grid") or {}
     base = {k: v for k, v in cfg.items() if k != "grid"}
+    if base.get("method") == "sdxl_base":
+        base.setdefault("timestep_spacing", "trailing")
     if not grid:
         base.setdefault("name", config_name(base))
         yield base
         return
+
     keys = list(grid)
+    points = []
     for values in itertools.product(*(grid[k] for k in keys)):
         point = json.loads(json.dumps(base))
         point.setdefault("params", {})
         for k, v in zip(keys, values):
-            if k in point.get("pipeline_keys", []):
+            if k in ("params", "grid", "name"):
+                raise ValueError(f"cannot sweep over {k!r}")
+            if k in CONFIG_KEYS:
                 point[k] = v
             else:
                 point["params"][k] = v
-        point["name"] = config_name(point, keys)
-        yield point
+        point.pop("name", None)  # grid points are always named from their settings
+        point["name"] = config_name(point, swept=keys)
+        points.append(point)
+    names = [p["name"] for p in points]
+    duplicates = sorted({n for n in names if names.count(n) > 1})
+    if duplicates:
+        raise ValueError(f"grid points share folder names {duplicates}")
+    yield from points
 
 
-def config_name(cfg, keys=None):
-    if cfg.get("name") and not keys:
+def _fmt(v):
+    if isinstance(v, (int, float)) and not isinstance(v, bool):
+        text = f"{v:g}"
+    elif isinstance(v, (list, tuple)):
+        text = "-".join(_fmt(x) for x in v)
+    else:
+        text = str(v)
+    return re.sub(r"[^A-Za-z0-9.+-]+", "-", text).strip("-")
+
+
+def config_name(cfg, swept=()):
+    """Folder name: an explicit 'name' wins for single configs; otherwise it is built from
+    the sampling settings, non-default pipeline settings and every swept key, so two
+    points of the same grid never share a folder."""
+    if cfg.get("name"):
         return cfg["name"]
     params = cfg.get("params", {})
-    keys = keys or sorted(params)
-    abbrev = {
-        "num_inference_steps": "steps", "guidance_scale": "cfg",
-        "lightning_steps": "ckpt", "lora_scale": "scale", "strength": "str",
-    }
-    parts = []
-    for k in keys:
-        v = cfg[k] if k in cfg and k not in params else params.get(k)
-        parts.append(f"{abbrev.get(k, k)}{v}")
+    merged = {**params, **{k: cfg[k] for k in TOP_LEVEL_KEYS if k in cfg}}
+    parts = [f"{short}{_fmt(merged[k])}" for k, short in _NAME_ORDER if k in merged]
+    parts += [f"{k}{_fmt(params[k])}" for k in sorted(params) if k not in dict(_NAME_ORDER)]
+    if cfg.get("lora_fuse") is False:
+        parts.append("unfused")
+    native = NATIVE_RESOLUTION.get(cfg.get("method"), 1024)
+    if cfg.get("resolution") and cfg["resolution"] != native:
+        parts.append(f"res{cfg['resolution']}")
+    covered = {k for k, _ in _NAME_ORDER} | set(params) | {"lora_fuse", "resolution"}
+    parts += [f"{k}{_fmt(cfg[k])}" for k in swept if k not in covered]
     return "_".join(parts) or "default"
+
+
+def identity(cfg):
+    return {k: cfg.get(k) for k in IDENTITY_KEYS}
+
+
+def check_identity(out, cfg):
+    """Return a description of how out/config.yaml differs from cfg, or None if it
+    matches or does not exist yet."""
+    path = Path(out) / "config.yaml"
+    if not path.exists():
+        return None
+    old, new = identity(load_yaml(path)), identity(cfg)
+    diff = {k: (old[k], new[k]) for k in old if old[k] != new[k]}
+    return f"{out} was made with different settings {diff}" if diff else None
 
 
 def read_prompts(cfg):
