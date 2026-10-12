@@ -52,7 +52,8 @@ class ClipScorer:
     def __init__(self, device):
         from transformers import CLIPModel, CLIPProcessor
         self.model = CLIPModel.from_pretrained(CLIP_MODEL).to(device).eval()
-        self.processor = CLIPProcessor.from_pretrained(CLIP_MODEL)
+        # Pin the slow processor so scores do not shift if the library default changes.
+        self.processor = CLIPProcessor.from_pretrained(CLIP_MODEL, use_fast=False)
         self.device = device
 
     @torch.no_grad()
