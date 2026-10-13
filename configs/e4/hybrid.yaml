@@ -1,0 +1,26 @@
+# E4 hybrid refine on the tuning split (docs/plan.md, E4 配置): choose the strength.
+#   stage 1: SDXL-Turbo, 1 step, 512 px, guidance 0; draft seeds `seeds`
+#   upscale: 512 -> 1024 bicubic in pixel space, VAE-encoded by the img2img pipeline
+#   stage 2: SDXL base img2img, DPM-Solver++ (trailing), nominal 10 steps, CFG 7.5 (the
+#            frozen baseline value, configs/e1/sdxl_base.yaml); noise seeds `refine_seeds`
+# Expected refine steps int(10 x strength) = 2 / 3 / 4 / 5; the executed timesteps and
+# UNet calls are logged in calls_*.jsonl. The no-refine control is draft_only.yaml.
+experiment: e4
+split: tune
+seeds: [0]
+refine_seeds: [1000]
+method: hybrid
+resolution: 1024
+dtype: fp16
+models:
+  stabilityai/sdxl-turbo: 71153311d3dbb46851df1931d3ca6e939de83304
+  stabilityai/stable-diffusion-xl-base-1.0: 462165984030d82259a11f4367a4eed129e94a7b
+timestep_spacing: trailing
+draft:
+  num_inference_steps: 1
+  guidance_scale: 0.0
+params:
+  num_inference_steps: 10
+  guidance_scale: 7.5
+grid:
+  strength: [0.2, 0.3, 0.4, 0.5]

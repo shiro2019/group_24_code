@@ -1,0 +1,22 @@
+# E4 smoke test: 10 tuning prompts at every strength of configs/e4/hybrid.yaml, to check
+# that refine runs and to read the executed refine steps from calls_*.jsonl.
+experiment: smoke
+split: tune
+limit: 10
+seeds: [0]
+refine_seeds: [1000]
+method: hybrid
+resolution: 1024
+dtype: fp16
+models:
+  stabilityai/sdxl-turbo: 71153311d3dbb46851df1931d3ca6e939de83304
+  stabilityai/stable-diffusion-xl-base-1.0: 462165984030d82259a11f4367a4eed129e94a7b
+timestep_spacing: trailing
+draft:
+  num_inference_steps: 1
+  guidance_scale: 0.0
+params:
+  num_inference_steps: 10
+  guidance_scale: 7.5
+grid:
+  strength: [0.2, 0.3, 0.4, 0.5]

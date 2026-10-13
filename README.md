@@ -46,6 +46,10 @@ sbatch --job-name=timing --nodelist=TC2N07 slurm/job.sbatch src.timing --config 
 J1=$(sbatch --parsable --job-name=e2-base slurm/chain.sbatch slurm/chains/e2_sdxl_base.txt 1 2)
 sbatch --dependency=afterok:$J1 --kill-on-invalid-dep=yes --job-name=e2-base slurm/chain.sbatch slurm/chains/e2_sdxl_base.txt 3 4
 
+# E4 两阶段（Turbo 草图 + SDXL 精修）：生成和计时都用 src.hybrid，打分仍用 src.evaluate
+sbatch --job-name=e4-smoke slurm/job.sbatch src.hybrid --config configs/smoke/hybrid.yaml
+sbatch --job-name=e4-timing --nodelist=TC2N07 slurm/job.sbatch src.hybrid --config configs/e4/hybrid.yaml --timing
+
 # 调参集打分完成后，按 plan 的规则选出质量优先点和最低步数点（只读 CSV，不需要 GPU）
 python -m src.select_configs --config configs/e2/sdxl_base.yaml
 ```
