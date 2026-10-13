@@ -10,23 +10,19 @@
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
 
-# Run step N of a chain file, then queue step N+1 if this step succeeded.
-# The QoS allows only 2 submitted jobs per user, so a long pipeline cannot be queued
-# up front; each step submits its successor when it finishes instead. While a step
-# runs the chain holds one job slot; queueing the next step briefly needs the second
-# one, so the submission is retried for a while if that slot is busy.
-#   sbatch --job-name=e2-base slurm/chain.sbatch slurm/chains/e2_sdxl_base.txt 1
+# Run steps FROM..TO of a chain file one after another inside this job, stopping at the
+# first failure. Compute nodes cannot submit jobs, so a pipeline longer than the 6-hour
+# limit is split into at most two jobs submitted from the login node, the second one
+# waiting for the first:
+#   J1=$(sbatch --parsable --job-name=e2-base slurm/chain.sbatch slurm/chains/e2_sdxl_base.txt 1 2)
+#   sbatch --dependency=afterok:$J1 --kill-on-invalid-dep=yes --job-name=e2-base \
+#       slurm/chain.sbatch slurm/chains/e2_sdxl_base.txt 3 4
 # Each non-empty, non-comment line of the chain file is "<module> <args...>".
-# If a step fails or hits the time limit, fix the cause and resubmit from that step,
-# e.g. "sbatch --job-name=e2-base slurm/chain.sbatch slurm/chains/e2_sdxl_base.txt 3";
-# generation resumes where it stopped.
+# If a step fails or the job hits the time limit, resubmit from that step; generation
+# resumes where it stopped.
 
 CHAIN="$1"
-STEP="${2:-1}"
-if ! [[ "$STEP" =~ ^[0-9]+$ ]]; then
-    echo "step must be a positive integer, got '$STEP'" >&2
-    exit 1
-fi
+FROM="${2:-1}"
 
 module load anaconda
 eval "$(conda shell.bash hook)"
@@ -36,34 +32,27 @@ cd "$SLURM_SUBMIT_DIR"
 
 mapfile -t STEPS < <(grep -vE '^\s*(#|$)' "$CHAIN" | tr -d '\r')
 TOTAL=${#STEPS[@]}
-if [ "$STEP" -lt 1 ] || [ "$STEP" -gt "$TOTAL" ]; then
-    echo "step $STEP is outside 1..$TOTAL of $CHAIN" >&2
-    exit 1
-fi
-read -r -a CMD <<< "${STEPS[$((STEP - 1))]}"
-echo "chain $CHAIN step $STEP/$TOTAL: python -m ${CMD[*]}"
-
-nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
-python -m "${CMD[@]}"
-STATUS=$?
-if [ "$STATUS" -ne 0 ]; then
-    echo "step $STEP failed with exit code $STATUS; chain stopped" >&2
-    exit "$STATUS"
-fi
-
-if [ "$STEP" -lt "$TOTAL" ]; then
-    NEXT=""
-    for attempt in 1 2 3 4 5 6; do
-        NEXT=$(sbatch --parsable --job-name="$SLURM_JOB_NAME" slurm/chain.sbatch "$CHAIN" $((STEP + 1)))
-        [ -n "$NEXT" ] && break
-        echo "queueing step $((STEP + 1)) failed (attempt $attempt), retrying in 2 minutes" >&2
-        sleep 120
-    done
-    if [ -z "$NEXT" ]; then
-        echo "could not queue step $((STEP + 1)); resubmit it manually" >&2
+TO="${3:-$TOTAL}"
+for n in "$FROM" "$TO"; do
+    if ! [[ "$n" =~ ^[0-9]+$ ]] || [ "$n" -lt 1 ] || [ "$n" -gt "$TOTAL" ]; then
+        echo "steps must be integers within 1..$TOTAL of $CHAIN, got '$n'" >&2
         exit 1
     fi
-    echo "queued step $((STEP + 1)) as job $NEXT"
-else
-    echo "chain $CHAIN finished"
+done
+if [ "$FROM" -gt "$TO" ]; then
+    echo "FROM ($FROM) is after TO ($TO)" >&2
+    exit 1
 fi
+
+nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
+for ((step = FROM; step <= TO; step++)); do
+    read -r -a CMD <<< "${STEPS[$((step - 1))]}"
+    echo "chain $CHAIN step $step/$TOTAL: python -m ${CMD[*]}"
+    python -m "${CMD[@]}"
+    status=$?
+    if [ "$status" -ne 0 ]; then
+        echo "step $step failed with exit code $status; stopped" >&2
+        exit "$status"
+    fi
+done
+echo "steps $FROM-$TO of $CHAIN finished"
