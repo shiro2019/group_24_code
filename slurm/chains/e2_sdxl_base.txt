@@ -1,5 +1,6 @@
-# E2 baseline sweep: 10 configs x 500 tuning prompts (~2.4 h per shard on A40), then scoring.
-# Run as two jobs: steps 1-2 (~4.8 h), then steps 3-4 (~2.7 h).
+# E2 baseline sweep: 10 configs x 500 tuning prompts, then scoring.
+# Measured on A40: ~2.2 h per shard, 7 min for scoring (~6.7 h in total).
+# Run as two jobs: steps 1-2 (~4.4 h), then steps 3-4 (~2.3 h).
 src.generate --config configs/e2/sdxl_base.yaml --shard 0 --num-shards 3
 src.generate --config configs/e2/sdxl_base.yaml --shard 1 --num-shards 3
 src.generate --config configs/e2/sdxl_base.yaml --shard 2 --num-shards 3

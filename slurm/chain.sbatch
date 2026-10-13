@@ -17,9 +17,16 @@
 #   J1=$(sbatch --parsable --job-name=e2-base slurm/chain.sbatch slurm/chains/e2_sdxl_base.txt 1 2)
 #   sbatch --dependency=afterok:$J1 --kill-on-invalid-dep=yes --job-name=e2-base \
 #       slurm/chain.sbatch slurm/chains/e2_sdxl_base.txt 3 4
-# Each non-empty, non-comment line of the chain file is "<module> <args...>".
-# If a step fails or the job hits the time limit, resubmit from that step; generation
-# resumes where it stopped.
+# Each non-empty line of the chain file that does not start with "#" is
+# "<module> <args...>". Arguments are split on whitespace: quotes are not interpreted
+# and a trailing "# comment" would be passed as arguments.
+# If a step fails or the job hits the time limit, the dependent job is cancelled too.
+# Resubmit the same ranges starting from the failed step, keeping an explicit end step
+# so each job stays under 6 h; e.g. if step 2 failed:
+#   J1=$(sbatch --parsable --job-name=e2-base slurm/chain.sbatch slurm/chains/e2_sdxl_base.txt 2 2)
+#   sbatch --dependency=afterok:$J1 --kill-on-invalid-dep=yes --job-name=e2-base \
+#       slurm/chain.sbatch slurm/chains/e2_sdxl_base.txt 3 4
+# Generation resumes where it stopped.
 
 CHAIN="$1"
 FROM="${2:-1}"

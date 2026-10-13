@@ -40,9 +40,9 @@ sbatch slurm/smoke.sbatch                                 # 冒烟测试：四�
 ```bash
 # 短任务（6 小时内）：单个作业
 sbatch --job-name=eval slurm/job.sbatch src.evaluate --config configs/e2/sdxl_base.yaml --metrics clip,imagereward
-sbatch --job-name=timing --nodelist=TC2N07 slurm/job.sbatch src.timing --config configs/e1/sdxl_base.yaml  # E1 配置冻结后才有
+sbatch --job-name=timing --nodelist=TC2N07 slurm/job.sbatch src.timing --config configs/e1/sdxl_base.yaml
 
-# 长任务：写成步骤清单，在一个作业里依次运行其中几步（例如 E2 基线共约 7 小时：3 个分片再打分）
+# 长任务：写成步骤清单，在一个作业里依次运行其中几步（例如 E2 基线实测共约 6.7 小时：3 个分片再打分）
 J1=$(sbatch --parsable --job-name=e2-base slurm/chain.sbatch slurm/chains/e2_sdxl_base.txt 1 2)
 sbatch --dependency=afterok:$J1 --kill-on-invalid-dep=yes --job-name=e2-base slurm/chain.sbatch slurm/chains/e2_sdxl_base.txt 3 4
 
@@ -50,9 +50,11 @@ sbatch --dependency=afterok:$J1 --kill-on-invalid-dep=yes --job-name=e2-base slu
 python -m src.select_configs --config configs/e2/sdxl_base.yaml
 ```
 
-选择脚本只用于 E2 调参集（`split: tune`）的网格：只使用完整打分（图片数量齐全）的最新指标，结果连同全部候选配置的分数写到 `outputs/selection/<实验>_<方法>.json`，冻结后据此手动写 `configs/e1/<方法>.yaml` 并提交到仓库。标了 `exploratory: true` 的文件（如 Lightning 1 步）不参与选择。
+选择脚本只用于 E2 调参集（`split: tune`）的网格：只使用完整打分（图片数量齐全）的最新指标，结果连同全部候选配置的分数写到 `outputs/selection/<实验>_<方法>.json`，冻结后据此手动写 `configs/e1/<方法>.yaml`，并把这份 JSON 复制为 `configs/e1/selection_<方法>.json`，两者一起提交到仓库作为冻结记录（基线的例子见 `configs/e1/`）。标了 `exploratory: true` 的文件（如 Lightning 1 步）不参与选择。
 
-集群每人最多同时提交 2 个作业、单个作业最长 6 小时，而且**计算节点上不能提交作业**，所以长任务要这样拆：在 `slurm/chains/` 里写一个步骤清单，每行一个 `<模块> <参数>`；`chain.sbatch <清单> <起始步> <结束步>` 在一个作业里依次运行这几步，每个作业的总时长控制在 6 小时以内。超过 6 小时就像上面那样分成两个作业，都在登录节点提交，第二个用 `--dependency=afterok` 排在第一个后面。某一步失败会停下，修好后从该步重新提交即可，生成会从中断处继续。
+集群每人最多同时提交 2 个作业、单个作业最长 6 小时，而且**计算节点上不能提交作业**，所以长任务要这样拆：在 `slurm/chains/` 里写一个步骤清单，每行一个 `<模块> <参数>`；`chain.sbatch <清单> <起始步> <结束步>` 在一个作业里依次运行这几步，每个作业的总时长控制在 6 小时以内。超过 6 小时就像上面那样分成两个作业，都在登录节点提交，第二个用 `--dependency=afterok` 排在第一个后面。步骤清单每行按空格切分参数，不支持引号，行尾也不能加注释。
+
+某一步失败或作业超时，后面排队的作业也会自动取消。修好后按原来的分段，从失败的那一步重新提交两个作业，并写明结束步，保证每个作业不超过 6 小时。例如第 2 步失败时，第一个作业提交 `chain.sbatch <清单> 2 2`，第二个仍是 `3 4`，用 `--dependency=afterok` 排在后面。生成会从中断处继续。
 
 生成可中断重跑，已存在的图片会跳过；指标追加到 `outputs/metrics/metrics.csv`，同一配置重复打分会追加多行，画图时取 `timestamp` 最新的一行。这个文件在每个人自己的集群目录里，汇总时需要把各人的 CSV 合并。`hardware` 列记录的是生成图片的 GPU（分片用了不同 GPU 时用 `/` 连接），延迟只看 `src.timing` 的结果（生成日志里的耗时没有预热，仅供参考）。
 
