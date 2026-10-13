@@ -1,0 +1,17 @@
+# Latency-matched reference point for the baseline on the eval split: 8 steps, CFG 7.5.
+# Not chosen by the selection rule (the frozen E1 baseline points are in sdxl_base.yaml).
+# It matches the latency of the E4 hybrid at strength 0.5 (~1.1 s on L40S) and gives
+# the E1 quality-latency curve a baseline point between 4 and 50 steps. Added before any
+# eval-split result of another method was available.
+experiment: e1
+split: eval
+seeds: [0]
+method: sdxl_base
+resolution: 1024
+dtype: fp16
+models:
+  stabilityai/stable-diffusion-xl-base-1.0: 462165984030d82259a11f4367a4eed129e94a7b
+timestep_spacing: trailing
+params:
+  num_inference_steps: 8
+  guidance_scale: 7.5

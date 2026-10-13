@@ -1,0 +1,4 @@
+# E1 baseline 8-step reference: 2,000 eval prompts (~1.6 h on A40), then scoring with FID.
+# One job is enough: chain.sbatch slurm/chains/e1_sdxl_base_8step.txt 1 2
+src.generate --config configs/e1/sdxl_base_8step.yaml
+src.evaluate --config configs/e1/sdxl_base_8step.yaml --metrics clip,imagereward,fid
