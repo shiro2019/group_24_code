@@ -31,21 +31,29 @@ def load_yaml(path):
 # Top-level keys that change how a pipeline is built or how images are produced.
 TOP_LEVEL_KEYS = ("lightning_steps", "lora_fuse", "lora_scale", "resolution", "timestep_spacing")
 
+# E4 two-stage configs only (method hybrid, run by src.hybrid): Turbo draft call
+# arguments, the img2img noise seeds paired with `seeds`, and the no-refine switch.
+HYBRID_KEYS = ("draft", "refine_seeds", "refine")
+
 # Every key a config may use at the top level. A grid over any of these sets the
 # top-level value; every other grid key is a pipeline call argument (cfg['params']).
 CONFIG_KEYS = frozenset({
     *TOP_LEVEL_KEYS, "experiment", "split", "prompts_file", "limit", "seeds", "method",
     "models", "dtype", "name", "save_size", "full_res_first_n", "exploratory", "params", "grid",
+    *HYBRID_KEYS,
 })
 
 # Fields that define what an output folder contains; generating or scoring a folder
 # whose config.yaml differs in any of them is refused.
 IDENTITY_KEYS = (
     "method", "models", "dtype", "split", "prompts_file", "save_size",
-    *TOP_LEVEL_KEYS, "params",
+    *TOP_LEVEL_KEYS, "params", *HYBRID_KEYS,
 )
 
 NATIVE_RESOLUTION = {"sdxl_turbo": 512}
+
+# Methods whose DPM-Solver++ stage takes timestep_spacing (hybrid: the refine stage).
+SPACING_METHODS = ("sdxl_base", "hybrid")
 
 _NAME_ORDER = (
     ("lightning_steps", "ckpt"), ("num_inference_steps", "steps"),
@@ -58,11 +66,11 @@ def expand_grid(cfg):
     unknown = set(cfg) - CONFIG_KEYS
     if unknown:
         raise ValueError(f"unknown config keys {sorted(unknown)}; see configs/README.md")
-    if "timestep_spacing" in cfg and cfg.get("method") != "sdxl_base":
-        raise ValueError("timestep_spacing only applies to method sdxl_base")
+    if "timestep_spacing" in cfg and cfg.get("method") not in SPACING_METHODS:
+        raise ValueError(f"timestep_spacing only applies to methods {SPACING_METHODS}")
     grid = cfg.get("grid") or {}
     base = {k: v for k, v in cfg.items() if k != "grid"}
-    if base.get("method") == "sdxl_base":
+    if base.get("method") in SPACING_METHODS and base.get("refine", True):
         base.setdefault("timestep_spacing", "trailing")
     if not grid:
         base.setdefault("name", config_name(base))

@@ -9,11 +9,11 @@
 | `prompts_file` | 自定义 prompt 文件（JSONL，每行至少有 `prompt_id` 和 `prompt` 两个字段），E5 等非 COCO 实验使用 |
 | `limit` | 只取前 N 条 prompt（调试用） |
 | `seeds` | seed 列表，每条 prompt 对每个 seed 各生成一张 |
-| `method` | `sdxl_base` / `lcm_lora` / `sdxl_turbo` / `sdxl_lightning` |
+| `method` | `sdxl_base` / `lcm_lora` / `sdxl_turbo` / `sdxl_lightning`；E4 两阶段用 `hybrid`，只能由 `src.hybrid` 运行 |
 | `resolution` | 生成分辨率（Turbo 512，其余 1024） |
 | `dtype` | 计算精度，默认 `fp16` |
 | `models` | `{仓库名: revision}`，已固定为冒烟测试实际使用的版本 |
-| `timestep_spacing` | 仅基线：调度器的时间步间隔，默认 `trailing`（第一步从 t=999 开始） |
+| `timestep_spacing` | 仅基线和 E4 精修阶段：调度器的时间步间隔，默认 `trailing`（第一步从 t=999 开始） |
 | `lightning_steps` | Lightning 使用哪个步数的 checkpoint（1 / 2 / 4 / 8） |
 | `lora_fuse`、`lora_scale` | LCM-LoRA 是否融合及 adapter scale；E3 用 `lora_fuse: false` |
 | `exploratory` | 设为 `true` 才允许超出官方推荐范围的设置（例如 Turbo、Lightning 开 CFG，或 Lightning 1 步）。它作用于整个文件，所以探索性的配置要单独放一个文件，不能和正式配置写在同一个网格里；这类文件不参与配置选择 |
@@ -22,6 +22,9 @@
 | `full_res_first_n` | 前 N 条 prompt 另存原尺寸图到 `full/`，默认 20，用于局部裁剪图；图片本身已是保存尺寸时（如 Turbo 512）不另存 |
 | `params` | 直接传给 pipeline 的参数，如 `num_inference_steps`、`guidance_scale`、`strength` |
 | `grid` | 参数网格，每个组合生成一个配置点 |
+| `draft` | 仅 E4（`method: hybrid`）：第一阶段 Turbo 的调用参数，固定 512，guidance 必须为 0 |
+| `refine_seeds` | 仅 E4：第二阶段 img2img 的加噪 seed，与 `seeds` 按位置一一配对，长度必须相同 |
+| `refine` | 仅 E4：设为 `false` 时只保留放大后的草图（无精修对照），此时不写 `params` 和 `refine_seeds` |
 
 ## 网格扫描
 
@@ -39,6 +42,10 @@ grid:
 ```
 
 Lightning 的 `num_inference_steps` 由代码自动设为 `lightning_steps`，保证步数与 checkpoint 一致，不要在 `params` 里另写。Turbo 和 Lightning 没写 `guidance_scale` 时自动设为 0。
+
+## E4 两阶段（`src.hybrid`）
+
+`method: hybrid` 的配置由 `python -m src.hybrid` 生成：Turbo 出 512 草图，像素空间 bicubic 放大到 `resolution`，再由 SDXL base img2img（DPM-Solver++，`timestep_spacing`）精修。`params` 是 img2img 的调用参数，必须有 `strength`；`models` 要同时写 Turbo 和 base 的版本。每张草图只生成一次，然后在网格的每个 strength 上精修，所以同一文件里的配置点只能扫 `params`。图片仍按草图 seed 命名，`src.evaluate`、`src.select_configs` 照常使用。`calls_*.jsonl` 分别记录两个阶段实际执行的 UNet 调用次数、batch size 和 timestep；CFG 把条件和无条件分支拼成 batch 2 算一次，计为一次调用。计时用 `python -m src.hybrid --config <文件> --timing`，协议与 `src.timing` 相同，计时范围是整个两阶段流程。
 
 ## 自动检查
 
