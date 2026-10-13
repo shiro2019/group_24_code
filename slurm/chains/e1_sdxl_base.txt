@@ -1,0 +1,6 @@
+# E1 baseline: 2 configs x 2,000 eval prompts (~6.8 h on A40), then scoring with FID.
+# Run as two jobs: steps 1-2 (~4.6 h), then steps 3-4 (~2.6 h including scoring).
+src.generate --config configs/e1/sdxl_base.yaml --shard 0 --num-shards 3
+src.generate --config configs/e1/sdxl_base.yaml --shard 1 --num-shards 3
+src.generate --config configs/e1/sdxl_base.yaml --shard 2 --num-shards 3
+src.evaluate --config configs/e1/sdxl_base.yaml --metrics clip,imagereward,fid
