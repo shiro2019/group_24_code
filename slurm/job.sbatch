@@ -10,8 +10,9 @@
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
 
-# Run any module of this repo on one GPU, from the repo root:
-#   sbatch --job-name=e2-base slurm/job.sbatch src.generate --config configs/e2/sdxl_base.yaml
+# Run any module of this repo on one GPU, from the repo root (one job is limited to 6 h;
+# use slurm/chain.sbatch for longer pipelines):
+#   sbatch --job-name=e2-base-s0 slurm/job.sbatch src.generate --config configs/e2/sdxl_base.yaml --shard 0 --num-shards 3
 # Pin a GPU type for timing runs with --nodelist, e.g. --nodelist=TC2N07 (L40S).
 
 module load anaconda
