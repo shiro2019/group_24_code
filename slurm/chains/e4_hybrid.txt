@@ -1,6 +1,7 @@
 # E4 tuning: 4 strengths + the no-refine control on 500 tuning prompts, then scoring.
-# Each draft is made once and refined at all 4 strengths. Not yet timed on TC2: update
-# this estimate after the smoke run and split into two jobs if it exceeds 6 h.
+# Each draft is made once and refined at all 4 strengths. Smoke run on A40: ~4 s per
+# prompt for all 4 strengths (draft 0.15 s; refine 0.7-1.2 s each), so ~35 min for 500
+# prompts plus ~2 min for the control and a few minutes of scoring: one job is enough.
 src.hybrid --config configs/e4/hybrid.yaml
 src.hybrid --config configs/e4/draft_only.yaml
 src.evaluate --config configs/e4/hybrid.yaml --metrics clip,imagereward
