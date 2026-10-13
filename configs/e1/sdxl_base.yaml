@@ -1,0 +1,17 @@
+# E1 baseline on the eval split: the two points frozen from the E2 tuning sweep
+# (selection record: configs/e1/selection_sdxl_base.json).
+#   quality point:     50 steps, CFG 7.5 (highest tuning ImageReward within the CLIP tolerance)
+#   lowest-step point:  4 steps, CFG 7.5
+experiment: e1
+split: eval
+seeds: [0]
+method: sdxl_base
+resolution: 1024
+dtype: fp16
+models:
+  stabilityai/stable-diffusion-xl-base-1.0: 462165984030d82259a11f4367a4eed129e94a7b
+timestep_spacing: trailing
+params:
+  guidance_scale: 7.5
+grid:
+  num_inference_steps: [4, 50]
