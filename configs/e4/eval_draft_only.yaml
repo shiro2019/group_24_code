@@ -1,0 +1,15 @@
+# E4 no-refine control on the eval split: the same Turbo draft and bicubic upscale as
+# eval_hybrid.yaml, without the img2img stage.
+experiment: e4
+split: eval
+seeds: [0]
+method: hybrid
+resolution: 1024
+dtype: fp16
+models:
+  stabilityai/sdxl-turbo: 71153311d3dbb46851df1931d3ca6e939de83304
+refine: false
+name: draft_only
+draft:
+  num_inference_steps: 1
+  guidance_scale: 0.0

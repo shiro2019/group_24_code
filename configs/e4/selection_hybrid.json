@@ -1,0 +1,121 @@
+{
+  "source_config": "configs/e4/hybrid.yaml",
+  "selected_at": "2026-10-13T11:52:02Z",
+  "git_commit": "d909efa",
+  "clip_tolerance": 1.0,
+  "best_clip_score": 27.0453,
+  "quality": {
+    "experiment": "e4",
+    "split": "tune",
+    "seeds": [
+      0
+    ],
+    "refine_seeds": [
+      1000
+    ],
+    "method": "hybrid",
+    "resolution": 1024,
+    "dtype": "fp16",
+    "models": {
+      "stabilityai/sdxl-turbo": "71153311d3dbb46851df1931d3ca6e939de83304",
+      "stabilityai/stable-diffusion-xl-base-1.0": "462165984030d82259a11f4367a4eed129e94a7b"
+    },
+    "timestep_spacing": "trailing",
+    "draft": {
+      "num_inference_steps": 1,
+      "guidance_scale": 0.0
+    },
+    "params": {
+      "num_inference_steps": 10,
+      "guidance_scale": 7.5,
+      "strength": 0.5
+    },
+    "name": "steps10_cfg7.5_str0.5"
+  },
+  "lowest_step": {
+    "experiment": "e4",
+    "split": "tune",
+    "seeds": [
+      0
+    ],
+    "refine_seeds": [
+      1000
+    ],
+    "method": "hybrid",
+    "resolution": 1024,
+    "dtype": "fp16",
+    "models": {
+      "stabilityai/sdxl-turbo": "71153311d3dbb46851df1931d3ca6e939de83304",
+      "stabilityai/stable-diffusion-xl-base-1.0": "462165984030d82259a11f4367a4eed129e94a7b"
+    },
+    "timestep_spacing": "trailing",
+    "draft": {
+      "num_inference_steps": 1,
+      "guidance_scale": 0.0
+    },
+    "params": {
+      "num_inference_steps": 10,
+      "guidance_scale": 7.5,
+      "strength": 0.5
+    },
+    "name": "steps10_cfg7.5_str0.5"
+  },
+  "candidates": [
+    {
+      "name": "steps10_cfg7.5_str0.2",
+      "steps": 10,
+      "image_reward": {
+        "value": "0.6584",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T11:49:08Z"
+      },
+      "clip_score": {
+        "value": "26.9135",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T11:49:08Z"
+      }
+    },
+    {
+      "name": "steps10_cfg7.5_str0.3",
+      "steps": 10,
+      "image_reward": {
+        "value": "0.6753",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T11:49:38Z"
+      },
+      "clip_score": {
+        "value": "26.93",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T11:49:38Z"
+      }
+    },
+    {
+      "name": "steps10_cfg7.5_str0.4",
+      "steps": 10,
+      "image_reward": {
+        "value": "0.7",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T11:50:06Z"
+      },
+      "clip_score": {
+        "value": "26.9904",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T11:50:06Z"
+      }
+    },
+    {
+      "name": "steps10_cfg7.5_str0.5",
+      "steps": 10,
+      "image_reward": {
+        "value": "0.7397",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T11:50:33Z"
+      },
+      "clip_score": {
+        "value": "27.0453",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T11:50:33Z"
+      }
+    }
+  ]
+}

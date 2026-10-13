@@ -1,0 +1,22 @@
+# E4 hybrid refine on the eval split: the point frozen from the tuning sweep
+# (configs/e4/hybrid.yaml; selection record: configs/e4/selection_hybrid.json).
+#   strength 0.5: highest tuning ImageReward (0.740) and CLIP Score (27.05) of 0.2-0.5
+# Same draft and noise seeds as tuning; seeds [0] matches the E1 eval runs.
+experiment: e4
+split: eval
+seeds: [0]
+refine_seeds: [1000]
+method: hybrid
+resolution: 1024
+dtype: fp16
+models:
+  stabilityai/sdxl-turbo: 71153311d3dbb46851df1931d3ca6e939de83304
+  stabilityai/stable-diffusion-xl-base-1.0: 462165984030d82259a11f4367a4eed129e94a7b
+timestep_spacing: trailing
+draft:
+  num_inference_steps: 1
+  guidance_scale: 0.0
+params:
+  num_inference_steps: 10
+  guidance_scale: 7.5
+  strength: 0.5

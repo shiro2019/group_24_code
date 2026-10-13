@@ -1,0 +1,8 @@
+# E4 on the eval split: the frozen strength-0.5 point and the no-refine control on
+# 2,000 prompts, then scoring with FID. From the tuning run (L40S, ~1.3 s per prompt
+# at strength 0.5) about 45 min for the refine point, ~10 min for the control and
+# ~15 min of scoring: one job.
+src.hybrid --config configs/e4/eval_hybrid.yaml
+src.hybrid --config configs/e4/eval_draft_only.yaml
+src.evaluate --config configs/e4/eval_hybrid.yaml --metrics clip,imagereward,fid
+src.evaluate --config configs/e4/eval_draft_only.yaml --metrics clip,imagereward,fid
