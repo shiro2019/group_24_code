@@ -2,8 +2,8 @@
 
     python -m src.plot_results --tables outputs/tables --out outputs/figures
 
-Reads the summary tables built from the merged metrics CSV (see the tables' README.md)
-and draws one figure per table, as PNG for slides and PDF for the report:
+Reads the summary tables written by src.make_tables and draws one figure per table, as PNG
+for slides and PDF for the report:
 
     e1_quality_latency   e1_main.csv           RQ1: every method's frozen points
     e2_sweeps            e2_sweep.csv          RQ2: tuning sweeps, selected points marked
@@ -11,13 +11,10 @@ and draws one figure per table, as PNG for slides and PDF for the report:
     e4_hybrid            e1_main.csv           RQ3: hybrid against the single methods
     e4_strength          e4_strength_tune.csv  RQ3: refine strength on the tuning split
     diversity            diversity.csv         seed diversity of the quality points
+    e5_parti             e5_parti.csv          PartiPrompts against the COCO eval split
+                         + e1_main.csv         (drawn only when e5_parti.csv exists)
 
 latency_sorted.csv holds the same rows as e1_main.csv and needs no figure of its own.
-
-E5 is not in the summary tables yet; pass its raw metric rows (the metrics.csv format) with
---e5 to also draw
-
-    e5_parti             --e5 CSV + e1_main.csv  PartiPrompts against the COCO eval split
 """
 
 import argparse
@@ -42,7 +39,6 @@ METHODS = ["SDXL + DPM-Solver++", "LCM-LoRA", "SDXL-Turbo", "SDXL-Lightning"]
 SHORT = {"SDXL + DPM-Solver++": "SDXL base", "LCM-LoRA": "LCM-LoRA",
          "SDXL-Turbo": "Turbo", "SDXL-Lightning": "Lightning"}
 HYBRID = "E4 Turbo draft + SDXL refine"
-METHOD_IDS = dict(zip(["sdxl_base", "lcm_lora", "sdxl_turbo", "sdxl_lightning"], METHODS))
 METRICS = [("image_reward", "ImageReward", "higher is better"),
            ("clip_score", "CLIP Score", "higher is better"),
            ("fid", "FID", "lower is better")]
@@ -309,12 +305,10 @@ def diversity_figure(div, out):
     save(fig, out, "diversity")
 
 
-def e5_figure(e5, e1, out):
+def e5_figure(parti, e1, out):
     """Generalisation: each method's quality point on the PartiPrompts subset, with the same
     configuration on the COCO eval split as a grey reference. Rows sorted by Parti ImageReward."""
-    parti = e5.pivot_table(index=["method", "config"], columns="metric", values="value").reset_index()
-    parti["method"] = parti["method"].map(METHOD_IDS)
-    n = int(e5["n_samples"].iloc[0])
+    n = int(parti["n_prompts"].iloc[0])
     coco = e1[e1["role"] == "quality"].set_index(["method", "config"])
     parti = parti.sort_values("image_reward")
     labels = [f"{SHORT[m]} ({c})" for m, c in zip(parti["method"], parti["config"])]
@@ -348,7 +342,6 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--tables", required=True, help="folder with the summary tables")
     ap.add_argument("--out", default="outputs/figures")
-    ap.add_argument("--e5", help="raw E5 metric rows (metrics.csv format); adds the E5 figure")
     args = ap.parse_args()
     tables, out = Path(args.tables), Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -361,8 +354,8 @@ def main():
     e4_figure(e1, out)
     e4_strength_figure(read("e4_strength_tune.csv"), out)
     diversity_figure(read("diversity.csv"), out)
-    if args.e5:
-        e5_figure(pd.read_csv(args.e5), e1, out)
+    if (tables / "e5_parti.csv").exists():
+        e5_figure(read("e5_parti.csv"), e1, out)
 
 
 if __name__ == "__main__":
