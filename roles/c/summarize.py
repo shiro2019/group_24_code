@@ -198,7 +198,7 @@ def main():
     lines += ["", "Missing freeze records: " + (", ".join(pending) or "none"), "",
               "Numbers are in metrics_latest.csv; incomplete configurations must not be treated as final results.",
               "C timing uses A's protocol on TC2N07 (L40S); A verifies consistency with other methods.",
-              "Report and video text: docs/c_methods_and_evidence.md and docs/c_video_script.md."]
+              "Report and video materials are shared separately with the group."]
     for experiment, title, metrics in (
         ("e2", "E2 tuning (500 prompts per point)", ["clip_score", "image_reward", "latency_median_s"]),
         ("e2_exploratory", "Exploratory one-step Lightning (excluded from selection)", ["clip_score", "image_reward", "latency_median_s"]),

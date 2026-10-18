@@ -1,5 +1,5 @@
 roles.c.workflow freeze --selection configs/e1/selection_sdxl_base.json
-roles.c.workflow freeze --selection configs/c_inputs/selection_lcm_lora.json
+roles.c.workflow freeze --selection configs/c_frozen/selection_lcm_lora.json
 roles.c.workflow diversity --method lcm_lora
 roles.c.workflow diversity --method sdxl_base
 roles.c.summarize
