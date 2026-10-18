@@ -3,6 +3,7 @@
 import csv
 import json
 import random
+import shutil
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -56,6 +57,23 @@ def grid(cfg, destination):
         "random_seed": 2026, "prompt_indices": indices, "prompts": selected,
         "configuration": cfg, "note": "Fixed random sample; resized thumbnails, not native-resolution crops."
     }, indent=2), encoding="utf-8")
+    # Also export one identical random prompt across methods as original saved
+    # PNGs, so D can build slides without downloading the full image corpus.
+    example_dir = destination.parent / "example"
+    example_dir.mkdir(exist_ok=True)
+    manifest_path = example_dir / "manifest.json"
+    first = selected[0]
+    manifest = {"prompt_id": first["prompt_id"], "prompt": first["prompt"],
+                "random_seed": 2026, "prompt_index": indices[0], "seeds": seeds, "methods": {}}
+    if manifest_path.exists():
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if manifest["prompt_id"] != first["prompt_id"] or manifest["seeds"] != seeds:
+            raise ValueError("exported example differs across methods")
+    for seed in seeds:
+        shutil.copyfile(run_dir(cfg) / f"{first['prompt_id']}_{seed}.png",
+                        example_dir / f"{cfg['method']}_{seed}.png")
+    manifest["methods"][cfg["method"]] = cfg
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
 
 def sweep_artifacts(points, rows, destination):
