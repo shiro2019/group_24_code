@@ -1,0 +1,140 @@
+{
+  "source_config": "configs/e3/lcm_lora.yaml",
+  "source_metrics_csv": "outputs/metrics/metrics.csv",
+  "selected_at": "2026-10-17T08:25:50Z",
+  "git_commit": "147c4ad",
+  "selection_rule": "Select the tuning configuration with the highest ImageReward whose CLIP Score is no more than 1.0 point below the best tuning CLIP Score; also retain the tuning configuration with the highest CLIP Score for E3 evaluation.",
+  "clip_tolerance": 1.0,
+  "best_clip_score": 26.5002,
+  "quality": {
+    "experiment": "e3",
+    "split": "tune",
+    "seeds": [
+      0
+    ],
+    "method": "lcm_lora",
+    "resolution": 1024,
+    "dtype": "fp16",
+    "models": {
+      "stabilityai/stable-diffusion-xl-base-1.0": "462165984030d82259a11f4367a4eed129e94a7b",
+      "latent-consistency/lcm-lora-sdxl": "a18548dd4956b174ec5b0d78d340c8dae0a129cd"
+    },
+    "lora_fuse": false,
+    "params": {
+      "num_inference_steps": 8,
+      "guidance_scale": 2.0
+    },
+    "lora_scale": 1.0,
+    "name": "steps8_cfg2_scale1_unfused"
+  },
+  "representatives": [
+    {
+      "experiment": "e3",
+      "split": "tune",
+      "seeds": [
+        0
+      ],
+      "method": "lcm_lora",
+      "resolution": 1024,
+      "dtype": "fp16",
+      "models": {
+        "stabilityai/stable-diffusion-xl-base-1.0": "462165984030d82259a11f4367a4eed129e94a7b",
+        "latent-consistency/lcm-lora-sdxl": "a18548dd4956b174ec5b0d78d340c8dae0a129cd"
+      },
+      "lora_fuse": false,
+      "params": {
+        "num_inference_steps": 8,
+        "guidance_scale": 2.0
+      },
+      "lora_scale": 0.75,
+      "name": "steps8_cfg2_scale0.75_unfused"
+    },
+    {
+      "experiment": "e3",
+      "split": "tune",
+      "seeds": [
+        0
+      ],
+      "method": "lcm_lora",
+      "resolution": 1024,
+      "dtype": "fp16",
+      "models": {
+        "stabilityai/stable-diffusion-xl-base-1.0": "462165984030d82259a11f4367a4eed129e94a7b",
+        "latent-consistency/lcm-lora-sdxl": "a18548dd4956b174ec5b0d78d340c8dae0a129cd"
+      },
+      "lora_fuse": false,
+      "params": {
+        "num_inference_steps": 8,
+        "guidance_scale": 2.0
+      },
+      "lora_scale": 1.0,
+      "name": "steps8_cfg2_scale1_unfused"
+    }
+  ],
+  "candidates": [
+    {
+      "name": "steps8_cfg2_scale0.25_unfused",
+      "lora_scale": 0.25,
+      "clip_score": {
+        "value": "25.1011",
+        "n_samples": "500",
+        "timestamp": "2026-10-17T08:14:35Z",
+        "hardware": "NVIDIA A40"
+      },
+      "image_reward": {
+        "value": "-0.9608",
+        "n_samples": "500",
+        "timestamp": "2026-10-17T08:14:35Z",
+        "hardware": "NVIDIA A40"
+      }
+    },
+    {
+      "name": "steps8_cfg2_scale0.5_unfused",
+      "lora_scale": 0.5,
+      "clip_score": {
+        "value": "26.4257",
+        "n_samples": "500",
+        "timestamp": "2026-10-17T08:15:23Z",
+        "hardware": "NVIDIA A40"
+      },
+      "image_reward": {
+        "value": "0.0323",
+        "n_samples": "500",
+        "timestamp": "2026-10-17T08:15:23Z",
+        "hardware": "NVIDIA A40"
+      }
+    },
+    {
+      "name": "steps8_cfg2_scale0.75_unfused",
+      "lora_scale": 0.75,
+      "clip_score": {
+        "value": "26.5002",
+        "n_samples": "500",
+        "timestamp": "2026-10-17T08:15:59Z",
+        "hardware": "NVIDIA A40"
+      },
+      "image_reward": {
+        "value": "0.5157",
+        "n_samples": "500",
+        "timestamp": "2026-10-17T08:15:59Z",
+        "hardware": "NVIDIA A40"
+      }
+    },
+    {
+      "name": "steps8_cfg2_scale1_unfused",
+      "lora_scale": 1.0,
+      "clip_score": {
+        "value": "26.3467",
+        "n_samples": "500",
+        "timestamp": "2026-10-17T08:16:36Z",
+        "hardware": "NVIDIA A40"
+      },
+      "image_reward": {
+        "value": "0.6255",
+        "n_samples": "500",
+        "timestamp": "2026-10-17T08:16:36Z",
+        "hardware": "NVIDIA A40"
+      }
+    }
+  ]
+}
