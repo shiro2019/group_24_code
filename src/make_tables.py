@@ -90,7 +90,7 @@ def points(path):
 
 
 def selections():
-    """{method: {"quality": name, "lowest-step": name, "settings": the quality cfg}}."""
+    """{method: {"quality": name, "lowest-step": name, "points": (quality cfg, lowest-step cfg)}}."""
     out = {}
     for method in METHODS:
         path = CONFIGS / "e1" / f"selection_{method}.json"
@@ -220,7 +220,7 @@ def diversity_rows(m):
 def e5_rows(m, merged):
     found = sorted({(r["method"], r["config"], r["n_samples"]) for r in merged
                     if r["experiment"] == "e5" and r["metric"] in ("clip_score", "image_reward")},
-                   key=lambda t: list(METHODS).index(t[0]) if t[0] in METHODS else len(METHODS))
+                   key=lambda t: (list(METHODS).index(t[0]) if t[0] in METHODS else len(METHODS), t[1]))
     return [{"method": METHODS.get(method, method), "config": name, "n_prompts": n,
              "clip_score": m.get("e5", "parti", method, name, "clip_score"),
              "image_reward": m.get("e5", "parti", method, name, "image_reward")}
