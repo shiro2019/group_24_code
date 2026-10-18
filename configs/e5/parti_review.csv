@@ -13,10 +13,10 @@ quantity,11,candidate,parti1019,a basketball game between a team of four cats an
 quantity,12,candidate,parti1017,two baseballs to the left of three tennis balls,Artifacts,,指定对象的数量是否正确,,keep,
 quantity,13,candidate,parti1035,four owls standing on a telephone wire,Animals,,指定对象的数量是否正确,,keep,
 quantity,14,candidate,parti1031,five chairs,Artifacts,,指定对象的数量是否正确,,keep,
-quantity,15,candidate,parti1021,several people putting their hands on a basketball,People,,指定对象的数量是否正确,,keep,
+quantity,15,candidate,parti1021,several people putting their hands on a basketball,People,,指定对象的数量是否正确,,replace,several 数量不明确，无法判定对错
 quantity,16,candidate,parti1030,three chairs,Artifacts,,指定对象的数量是否正确,,keep,
-quantity,17,candidate,parti1048,bottles,Artifacts,,指定对象的数量是否正确,no explicit count,keep,
-quantity,18,candidate,parti1027,300 movie titles,Artifacts,Simple numbers but challenging,指定对象的数量是否正确,,keep,
+quantity,17,candidate,parti1048,bottles,Artifacts,,指定对象的数量是否正确,no explicit count,replace,没有给出具体数量，无法按数量规则判定
+quantity,18,candidate,parti1027,300 movie titles,Artifacts,Simple numbers but challenging,指定对象的数量是否正确,,replace,300 个对象无法人工数清
 quantity,19,candidate,parti1024,two baseballs next to three tennis balls,Artifacts,,指定对象的数量是否正确,,keep,
 quantity,20,candidate,parti1064,five red balls on a table,Artifacts,,指定对象的数量是否正确,,keep,
 quantity,21,candidate,parti1061,two red balls,Artifacts,,指定对象的数量是否正确,,keep,
@@ -26,15 +26,15 @@ quantity,24,candidate,parti1041,two red boxes,Illustrations,,指定对象的数�
 quantity,25,candidate,parti1082,a ceiling fan with four white blades,Indoor Scenes,,指定对象的数量是否正确,,keep,
 quantity,26,candidate,parti1097,a family of four posing on the moon,People,,指定对象的数量是否正确,,keep,
 quantity,27,candidate,parti1047,three small yellow boxes,Illustrations,,指定对象的数量是否正确,,keep,
-quantity,28,candidate,parti1036,an owl family,Animals,,指定对象的数量是否正确,no explicit count,keep,
-quantity,29,candidate,parti1028,a collection of glasses,Artifacts,,指定对象的数量是否正确,no explicit count,keep,
+quantity,28,candidate,parti1036,an owl family,Animals,,指定对象的数量是否正确,no explicit count,replace,没有给出具体数量，无法按数量规则判定
+quantity,29,candidate,parti1028,a collection of glasses,Artifacts,,指定对象的数量是否正确,no explicit count,replace,没有给出具体数量，无法按数量规则判定
 quantity,30,candidate,parti1089,one child on a couch,People,,指定对象的数量是否正确,,keep,
-quantity,31,reserve,parti1034,a bunch of laptops piled on a sofa,Indoor Scenes,,指定对象的数量是否正确,no explicit count,,
-quantity,32,reserve,parti1046,four teacups surounding a kettle,Artifacts,,指定对象的数量是否正确,,,
-quantity,33,reserve,parti1054,three wine bottles,Artifacts,,指定对象的数量是否正确,,,
-quantity,34,reserve,parti1083,a ceiling fan with five brown blades,Indoor Scenes,,指定对象的数量是否正确,,,
-quantity,35,reserve,parti1073,five green peppers to the right of two red onions,Food & Beverage,,指定对象的数量是否正确,,,
-quantity,36,reserve,parti1079,two chemtrails forming an X in blue sky,Outdoor Scenes,,指定对象的数量是否正确,,,
+quantity,31,reserve,parti1034,a bunch of laptops piled on a sofa,Indoor Scenes,,指定对象的数量是否正确,no explicit count,replace,没有给出具体数量，无法按数量规则判定
+quantity,32,reserve,parti1046,four teacups surounding a kettle,Artifacts,,指定对象的数量是否正确,,keep,
+quantity,33,reserve,parti1054,three wine bottles,Artifacts,,指定对象的数量是否正确,,keep,
+quantity,34,reserve,parti1083,a ceiling fan with five brown blades,Indoor Scenes,,指定对象的数量是否正确,,keep,
+quantity,35,reserve,parti1073,five green peppers to the right of two red onions,Food & Beverage,,指定对象的数量是否正确,,keep,
+quantity,36,reserve,parti1079,two chemtrails forming an X in blue sky,Outdoor Scenes,,指定对象的数量是否正确,,keep,
 quantity,37,reserve,parti1039,a comic about two cats doing research,Artifacts,,指定对象的数量是否正确,,,
 quantity,38,reserve,parti1094,a family of four posing in front of a house,People,,指定对象的数量是否正确,,,
 quantity,39,reserve,parti1074,Times Square with thousands of dogs running around,World Knowledge,,指定对象的数量是否正确,no explicit count,,
@@ -90,57 +90,57 @@ quantity,88,reserve,parti1014,ten red apples,Produce & Plants,,指定对象的�
 quantity,89,reserve,parti1101,two runners crossing the finish line together,People,,指定对象的数量是否正确,,,
 quantity,90,reserve,parti1095,a family of four posing at the Grand Canyon,People,,指定对象的数量是否正确,,,
 writing,1,candidate,parti1569,"The saying ""BE EXCELLENT TO EACH OTHER"" written on a red brick wall with a graffiti image of a green alien wearing a tuxedo. A yellow fire hydrant is on a sidewalk in the foreground.",Illustrations,,要求的文本是否准确出现,,keep,
-writing,2,candidate,parti1584,a yellow t-shirt with a dog on it,Artifacts,,要求的文本是否准确出现,no quoted text to check,keep,
-writing,3,candidate,parti1585,a blue t-shirt with a dinosaur on it,Artifacts,,要求的文本是否准确出现,no quoted text to check,keep,
-writing,4,candidate,parti1551,Portrait of a tiger wearing a train conductor's hat and holding a skateboard that has a yin-yang symbol on it. photograph,Animals,,要求的文本是否准确出现,no quoted text to check,keep,
-writing,5,candidate,parti1612,a black t-shirt with the peace sign on it,Artifacts,,要求的文本是否准确出现,no quoted text to check,keep,
+writing,2,candidate,parti1584,a yellow t-shirt with a dog on it,Artifacts,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
+writing,3,candidate,parti1585,a blue t-shirt with a dinosaur on it,Artifacts,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
+writing,4,candidate,parti1551,Portrait of a tiger wearing a train conductor's hat and holding a skateboard that has a yin-yang symbol on it. photograph,Animals,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
+writing,5,candidate,parti1612,a black t-shirt with the peace sign on it,Artifacts,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
 writing,6,candidate,parti1630,a wooden post with a blue '5' painted on top,Outdoor Scenes,,要求的文本是否准确出现,,keep,
 writing,7,candidate,parti1543,"A green sign that says ""Very Deep Learning"" and is at the edge of the Grand Canyon.",World Knowledge,,要求的文本是否准确出现,,keep,
-writing,8,candidate,parti1556,"Two cups of coffee, one with latte art of the Eiffel tower. The other has latte art of the Statue of Liberty.",Food & Beverage,,要求的文本是否准确出现,no quoted text to check,keep,
-writing,9,candidate,parti1590,a flag with three vertical stripes,Illustrations,,要求的文本是否准确出现,no quoted text to check,keep,
+writing,8,candidate,parti1556,"Two cups of coffee, one with latte art of the Eiffel tower. The other has latte art of the Statue of Liberty.",Food & Beverage,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
+writing,9,candidate,parti1590,a flag with three vertical stripes,Illustrations,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
 writing,10,candidate,parti1620,the words 'KEEP OFF THE GRASS' written on a brick wall,Indoor Scenes,,要求的文本是否准确出现,,keep,
 writing,11,candidate,parti1565,"A burger patty, with the bottom bun and lettuce and tomatoes. ""COFFEE"" written on it in mustard",Food & Beverage,,要求的文本是否准确出现,,keep,
-writing,12,candidate,parti1593,a black towel with a cartoon of a dog on it,Artifacts,,要求的文本是否准确出现,no quoted text to check,keep,
+writing,12,candidate,parti1593,a black towel with a cartoon of a dog on it,Artifacts,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
 writing,13,candidate,parti1573,"Anime illustration of a kangaroo holding a sign that says ""Starry Night"", in front of the Sydney Opera House sitting next to the Eiffel Tower under a blue night sky of roiling energy, exploding yellow stars, and radiating swirls of blu",World Knowledge,,要求的文本是否准确出现,,keep,
 writing,14,candidate,parti1610,a t-shirt with 'ANKH' written on it,Artifacts,,要求的文本是否准确出现,,keep,
 writing,15,candidate,parti1579,graffiti spelling BE KIND on white subway tile,Illustrations,,要求的文本是否准确出现,,keep,
-writing,16,candidate,parti1617,a laptop screen showing a document being edited,Artifacts,,要求的文本是否准确出现,no quoted text to check,keep,
+writing,16,candidate,parti1617,a laptop screen showing a document being edited,Artifacts,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
 writing,17,candidate,parti1567,"The saying ""BE EXCELLENT TO EACH OTHER"" written in a stained glass window.",Illustrations,,要求的文本是否准确出现,,keep,
-writing,18,candidate,parti1591,"a flag with three vertical stripes that are blue, white and red",Illustrations,,要求的文本是否准确出现,no quoted text to check,keep,
-writing,19,candidate,parti1554,"Two cups of coffee, one with latte art of a lovely princess. The other has latte art of a frog.",Food & Beverage,,要求的文本是否准确出现,no quoted text to check,keep,
-writing,20,candidate,parti1546,Portrait of a tiger wearing a train conductor's hat and holding a skateboard that has a yin-yang symbol on it. Chinese ink and wash painting,Animals,,要求的文本是否准确出现,no quoted text to check,keep,
+writing,18,candidate,parti1591,"a flag with three vertical stripes that are blue, white and red",Illustrations,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
+writing,19,candidate,parti1554,"Two cups of coffee, one with latte art of a lovely princess. The other has latte art of a frog.",Food & Beverage,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
+writing,20,candidate,parti1546,Portrait of a tiger wearing a train conductor's hat and holding a skateboard that has a yin-yang symbol on it. Chinese ink and wash painting,Animals,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
 writing,21,candidate,parti1606,"a yellow wall with 'Hello, world.' written on it",Indoor Scenes,,要求的文本是否准确出现,,keep,
 writing,22,candidate,parti1603,a sweatshirt with 'Batch Norm' written on it,Artifacts,,要求的文本是否准确出现,,keep,
 writing,23,candidate,parti1574,"a group of cats in a meeting. there is a whiteboard with ""stack more layers"" written on it.",Indoor Scenes,,要求的文本是否准确出现,,keep,
-writing,24,candidate,parti1548,Portrait of a tiger wearing a train conductor's hat and holding a skateboard that has a yin-yang symbol on it. comic book illustration,Animals,,要求的文本是否准确出现,no quoted text to check,keep,
-writing,25,candidate,parti1608,a logo of a wombat on a coffee mug,Artifacts,,要求的文本是否准确出现,no quoted text to check,keep,
+writing,24,candidate,parti1548,Portrait of a tiger wearing a train conductor's hat and holding a skateboard that has a yin-yang symbol on it. comic book illustration,Animals,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
+writing,25,candidate,parti1608,a logo of a wombat on a coffee mug,Artifacts,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
 writing,26,candidate,parti1627,the word 'START' written in chalk on a sidewalk,Outdoor Scenes,,要求的文本是否准确出现,,keep,
-writing,27,candidate,parti1592,a white towel with a cartoon of a cat on it,Artifacts,,要求的文本是否准确出现,no quoted text to check,keep,
-writing,28,candidate,parti1615,a laptop screen showing an internet search,Artifacts,,要求的文本是否准确出现,no quoted text to check,keep,
-writing,29,candidate,parti1549,Portrait of a tiger wearing a train conductor's hat and holding a skateboard that has a yin-yang symbol on it. marble statue,Animals,,要求的文本是否准确出现,no quoted text to check,keep,
+writing,27,candidate,parti1592,a white towel with a cartoon of a cat on it,Artifacts,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
+writing,28,candidate,parti1615,a laptop screen showing an internet search,Artifacts,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
+writing,29,candidate,parti1549,Portrait of a tiger wearing a train conductor's hat and holding a skateboard that has a yin-yang symbol on it. marble statue,Animals,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
 writing,30,candidate,parti1581,a boat with 'BLUE GROOVE' written on its hull,Vehicles,,要求的文本是否准确出现,,keep,
-writing,31,reserve,parti1601,the saying 'do unto others as they would do unto you' written on a white background,Artifacts,,要求的文本是否准确出现,,,
-writing,32,reserve,parti1632,a series of musical notes on a computer screen,Artifacts,,要求的文本是否准确出现,no quoted text to check,,
-writing,33,reserve,parti1561,G I G G L E painted in thick colorful lettering as graffiti on a faded red brick wall with a splotch of exploding white paint.,Illustrations,,要求的文本是否准确出现,no quoted text to check,,
-writing,34,reserve,parti1587,a bowl with a cartoon dinosaur on it,Artifacts,,要求的文本是否准确出现,no quoted text to check,,
-writing,35,reserve,parti1566,"Two cups of coffee, one with latte art of the words ""LOVE"" written in one. The other has latte art of the words ""PEACE"" written in the other.",Artifacts,,要求的文本是否准确出现,,,
-writing,36,reserve,parti1560,"Two cups of coffee, one with latte art of yin yang symbol. The other has latte art of a heart.",Food & Beverage,,要求的文本是否准确出现,no quoted text to check,,
-writing,37,reserve,parti1611,a t-shirt with 'Archaelogy Rocks!' written on it,Artifacts,,要求的文本是否准确出现,,,
-writing,38,reserve,parti1559,"A glass of red wine tipped over on a couch, with a stain that writes ""OOPS"" on the couch.",Indoor Scenes,,要求的文本是否准确出现,,,
-writing,39,reserve,parti1599,world's best brother t-shirt,Artifacts,,要求的文本是否准确出现,no quoted text to check,,
-writing,40,reserve,parti1571,a hot air balloon with chameleon logo. the sun is shining and puffy white clouds are in the background.,Vehicles,,要求的文本是否准确出现,no quoted text to check,,
-writing,41,reserve,parti1594,a yellow wall with the word KA-BOOM on it,Artifacts,,要求的文本是否准确出现,,,
-writing,42,reserve,parti1545,Portrait of a tiger wearing a train conductor's hat and holding a skateboard that has a yin-yang symbol on it. child's crayon drawing,Animals,,要求的文本是否准确出现,no quoted text to check,,
-writing,43,reserve,parti1553,"Two cups of coffee, one with latte art of a map of United States. The other has latte art of a map of Africa.",World Knowledge,,要求的文本是否准确出现,no quoted text to check,,
-writing,44,reserve,parti1613,a store front with 'Grassy Meadow' written on it,Outdoor Scenes,,要求的文本是否准确出现,,,
-writing,45,reserve,parti1607,"a motorcycle parked in an ornate bank lobby with ""BUZZ"" written on its body",Vehicles,,要求的文本是否准确出现,,,
-writing,46,reserve,parti1558,"A bar of chocolate without a wrapper that has the word ""WRAPPER"" printed on it.",Artifacts,,要求的文本是否准确出现,,,
-writing,47,reserve,parti1570,"The saying ""BE EXCELLENT TO EACH OTHER"" written with carved letters on driftwood.",Illustrations,,要求的文本是否准确出现,,,
-writing,48,reserve,parti1626,the word 'START' written above the word 'SMILING',Illustrations,,要求的文本是否准确出现,,,
-writing,49,reserve,parti1623,the word 'START',Illustrations,,要求的文本是否准确出现,,,
-writing,50,reserve,parti1577,"a robot holding a sign with ""Let's PAINT!"" written on it",Artifacts,,要求的文本是否准确出现,,,
-writing,51,reserve,parti1625,the word 'START' on a blue t-shirt,Artifacts,,要求的文本是否准确出现,,,
-writing,52,reserve,parti1622,the words 'KEEP OFF THE GRASS' on a sign next to a lawn,Outdoor Scenes,,要求的文本是否准确出现,,,
+writing,31,reserve,parti1601,the saying 'do unto others as they would do unto you' written on a white background,Artifacts,,要求的文本是否准确出现,,keep,
+writing,32,reserve,parti1632,a series of musical notes on a computer screen,Artifacts,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
+writing,33,reserve,parti1561,G I G G L E painted in thick colorful lettering as graffiti on a faded red brick wall with a splotch of exploding white paint.,Illustrations,,要求的文本是否准确出现,no quoted text to check,keep,
+writing,34,reserve,parti1587,a bowl with a cartoon dinosaur on it,Artifacts,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
+writing,35,reserve,parti1566,"Two cups of coffee, one with latte art of the words ""LOVE"" written in one. The other has latte art of the words ""PEACE"" written in the other.",Artifacts,,要求的文本是否准确出现,,keep,
+writing,36,reserve,parti1560,"Two cups of coffee, one with latte art of yin yang symbol. The other has latte art of a heart.",Food & Beverage,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
+writing,37,reserve,parti1611,a t-shirt with 'Archaelogy Rocks!' written on it,Artifacts,,要求的文本是否准确出现,,keep,
+writing,38,reserve,parti1559,"A glass of red wine tipped over on a couch, with a stain that writes ""OOPS"" on the couch.",Indoor Scenes,,要求的文本是否准确出现,,keep,
+writing,39,reserve,parti1599,world's best brother t-shirt,Artifacts,,要求的文本是否准确出现,no quoted text to check,keep,
+writing,40,reserve,parti1571,a hot air balloon with chameleon logo. the sun is shining and puffy white clouds are in the background.,Vehicles,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
+writing,41,reserve,parti1594,a yellow wall with the word KA-BOOM on it,Artifacts,,要求的文本是否准确出现,,keep,
+writing,42,reserve,parti1545,Portrait of a tiger wearing a train conductor's hat and holding a skateboard that has a yin-yang symbol on it. child's crayon drawing,Animals,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
+writing,43,reserve,parti1553,"Two cups of coffee, one with latte art of a map of United States. The other has latte art of a map of Africa.",World Knowledge,,要求的文本是否准确出现,no quoted text to check,replace,只有图案或符号，没有要求写出的文字，无法按文字规则判定
+writing,44,reserve,parti1613,a store front with 'Grassy Meadow' written on it,Outdoor Scenes,,要求的文本是否准确出现,,keep,
+writing,45,reserve,parti1607,"a motorcycle parked in an ornate bank lobby with ""BUZZ"" written on its body",Vehicles,,要求的文本是否准确出现,,keep,
+writing,46,reserve,parti1558,"A bar of chocolate without a wrapper that has the word ""WRAPPER"" printed on it.",Artifacts,,要求的文本是否准确出现,,keep,
+writing,47,reserve,parti1570,"The saying ""BE EXCELLENT TO EACH OTHER"" written with carved letters on driftwood.",Illustrations,,要求的文本是否准确出现,,keep,
+writing,48,reserve,parti1626,the word 'START' written above the word 'SMILING',Illustrations,,要求的文本是否准确出现,,keep,
+writing,49,reserve,parti1623,the word 'START',Illustrations,,要求的文本是否准确出现,,keep,
+writing,50,reserve,parti1577,"a robot holding a sign with ""Let's PAINT!"" written on it",Artifacts,,要求的文本是否准确出现,,keep,
+writing,51,reserve,parti1625,the word 'START' on a blue t-shirt,Artifacts,,要求的文本是否准确出现,,keep,
+writing,52,reserve,parti1622,the words 'KEEP OFF THE GRASS' on a sign next to a lawn,Outdoor Scenes,,要求的文本是否准确出现,,keep,
 writing,53,reserve,parti1629,a wooden post in front of a patch of tall grass,Outdoor Scenes,,要求的文本是否准确出现,no quoted text to check,,
 writing,54,reserve,parti1609,a coffee mug with an ankh symbol on it,Artifacts,,要求的文本是否准确出现,no quoted text to check,,
 writing,55,reserve,parti1580,"a grumpy porcupine handing a check for $10,000 to a smiling peacock",Animals,,要求的文本是否准确出现,no quoted text to check,,
@@ -182,21 +182,21 @@ writing,90,reserve,parti1600,the cover of a book called 'Backpropaganda' by I.C.
 writing,91,reserve,parti1604,a yellow sticky note with 'BUY MILK' written on it,Artifacts,,要求的文本是否准确出现,,,
 position,1,candidate,parti1007,a large yellow sphere behind a small purple pyramid,Illustrations,,指定的相对位置是否成立,,keep,
 position,2,candidate,parti1012,a brown trash bin to the left of a blue recycling bin,Artifacts,,指定的相对位置是否成立,,keep,
-position,3,candidate,parti1003,a white background with a large blue circle and a small green square,Illustrations,,指定的相对位置是否成立,no explicit spatial relation,keep,
+position,3,candidate,parti1003,a white background with a large blue circle and a small green square,Illustrations,,指定的相对位置是否成立,no explicit spatial relation,replace,只描述颜色或大小，没有相对位置关系，无法按空间关系规则判定
 position,4,candidate,parti981,A photo of a Japanese Porcelain Imari vase on the ground below a wooden chair.,World Knowledge,,指定的相对位置是否成立,,keep,
 position,5,candidate,parti989,a red circle on top of a blue square,Illustrations,,指定的相对位置是否成立,,keep,
 position,6,candidate,parti993,a red sphere on top of a yellow box,Illustrations,,指定的相对位置是否成立,,keep,
 position,7,candidate,parti992,a red box next to a blue box,Illustrations,,指定的相对位置是否成立,,keep,
 position,8,candidate,parti1010,a red swirl above a black dashed line.,Illustrations,,指定的相对位置是否成立,,keep,
 position,9,candidate,parti1009,a yellow swirl next to a blue dashed line.,Illustrations,,指定的相对位置是否成立,,keep,
-position,10,candidate,parti998,a black background with a large yellow circle,Illustrations,,指定的相对位置是否成立,no explicit spatial relation,keep,
+position,10,candidate,parti998,a black background with a large yellow circle,Illustrations,,指定的相对位置是否成立,no explicit spatial relation,replace,只描述颜色或大小，没有相对位置关系，无法按空间关系规则判定
 position,11,candidate,parti994,a large blue box with three small yellow boxes on it,Illustrations,,指定的相对位置是否成立,,keep,
-position,12,candidate,parti995,several red lego blocks and one blue one,Artifacts,,指定的相对位置是否成立,no explicit spatial relation,keep,
-position,13,candidate,parti1001,a white background with a large blue square,Illustrations,,指定的相对位置是否成立,no explicit spatial relation,keep,
+position,12,candidate,parti995,several red lego blocks and one blue one,Artifacts,,指定的相对位置是否成立,no explicit spatial relation,replace,测的是数量，不是相对位置
+position,13,candidate,parti1001,a white background with a large blue square,Illustrations,,指定的相对位置是否成立,no explicit spatial relation,replace,只描述颜色或大小，没有相对位置关系，无法按空间关系规则判定
 position,14,candidate,parti1013,a circular brown trash bin in front of a brick wall,Artifacts,,指定的相对位置是否成立,,keep,
 position,15,candidate,parti984,a blue wooden pyramid on top of a red plastic box,Illustrations,,指定的相对位置是否成立,,keep,
 position,16,candidate,parti1006,a green pyramid in front of a blue box,Illustrations,,指定的相对位置是否成立,,keep,
-position,17,candidate,parti1002,a black background with a large yellow circle and a small red square,Illustrations,,指定的相对位置是否成立,no explicit spatial relation,keep,
+position,17,candidate,parti1002,a black background with a large yellow circle and a small red square,Illustrations,,指定的相对位置是否成立,no explicit spatial relation,replace,只描述颜色或大小，没有相对位置关系，无法按空间关系规则判定
 position,18,candidate,parti991,a red box to the right of a green sphere,Illustrations,,指定的相对位置是否成立,,keep,
 position,19,candidate,parti996,a red block to the left of a blue pyramid,Illustrations,,指定的相对位置是否成立,,keep,
 position,20,candidate,parti1004,a large yellow triangle above a green square and red rectangle,Illustrations,,指定的相对位置是否成立,,keep,
@@ -204,14 +204,14 @@ position,21,candidate,parti1008,a metallic blue sphere to the left of a brown ca
 position,22,candidate,parti985,concentric squares fading from yellow on the outside to deep orange on the inside,Illustrations,,指定的相对位置是否成立,,keep,
 position,23,candidate,parti1005,two small circles to the left of a red triangle that is on a green rectangle,Illustrations,,指定的相对位置是否成立,,keep,
 position,24,candidate,parti988,a white flag with a red circle next to a solid blue flag,Artifacts,,指定的相对位置是否成立,,keep,
-position,25,candidate,parti1000,a black background with a large yellow square,Illustrations,,指定的相对位置是否成立,no explicit spatial relation,keep,
+position,25,candidate,parti1000,a black background with a large yellow square,Illustrations,,指定的相对位置是否成立,no explicit spatial relation,replace,只描述颜色或大小，没有相对位置关系，无法按空间关系规则判定
 position,26,candidate,parti979,a stack of three red cubes with a blue sphere on the right and two green cones on the left,Illustrations,,指定的相对位置是否成立,,keep,
 position,27,candidate,parti987,a red cube on top of a blue cube,Illustrations,GLIDE,指定的相对位置是否成立,,keep,
 position,28,candidate,parti997,three small yellow boxes on a large blue box,Illustrations,,指定的相对位置是否成立,,keep,
 position,29,candidate,parti982,a pen-and-ink crosshatched drawing of a sphere with dark square on it,Illustrations,,指定的相对位置是否成立,,keep,
-position,30,candidate,parti986,A green heart with shadow,Illustrations,VQ-Diffusion,指定的相对位置是否成立,no explicit spatial relation,keep,
-position,31,reserve,parti983,a metallic blue sphere to the left of a yellow box made of felt,Illustrations,,指定的相对位置是否成立,,,
-position,32,reserve,parti990,a yellow box to the right of a blue sphere,Illustrations,,指定的相对位置是否成立,,,
-position,33,reserve,parti1011,a green pepper to the left of a red pepper,Food & Beverage,,指定的相对位置是否成立,,,
-position,34,reserve,parti980,A photo of a Persian Metal Engraving vase sitting to the left of a bunch of orange flowers.,World Knowledge,,指定的相对位置是否成立,,,
-position,35,reserve,parti999,a white background with a large blue circle,Illustrations,,指定的相对位置是否成立,no explicit spatial relation,,
+position,30,candidate,parti986,A green heart with shadow,Illustrations,VQ-Diffusion,指定的相对位置是否成立,no explicit spatial relation,replace,没有相对位置关系
+position,31,reserve,parti983,a metallic blue sphere to the left of a yellow box made of felt,Illustrations,,指定的相对位置是否成立,,keep,
+position,32,reserve,parti990,a yellow box to the right of a blue sphere,Illustrations,,指定的相对位置是否成立,,keep,
+position,33,reserve,parti1011,a green pepper to the left of a red pepper,Food & Beverage,,指定的相对位置是否成立,,keep,
+position,34,reserve,parti980,A photo of a Persian Metal Engraving vase sitting to the left of a bunch of orange flowers.,World Knowledge,,指定的相对位置是否成立,,keep,
+position,35,reserve,parti999,a white background with a large blue circle,Illustrations,,指定的相对位置是否成立,no explicit spatial relation,replace,只描述颜色或大小，没有相对位置关系，无法按空间关系规则判定

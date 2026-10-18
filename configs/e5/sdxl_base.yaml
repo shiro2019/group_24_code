@@ -1,0 +1,17 @@
+# E5 hard prompts (docs/plan.md, E5 规则): the frozen E1 quality point of the baseline
+# (configs/e1/sdxl_base.yaml: 50 steps, CFG 7.5) on the frozen PartiPrompts list.
+# Images are kept at full size so text and counts can be judged; metrics still resize to 512.
+experiment: e5
+split: parti
+prompts_file: configs/e5/parti_prompts.jsonl
+seeds: [0]
+method: sdxl_base
+resolution: 1024
+dtype: fp16
+models:
+  stabilityai/stable-diffusion-xl-base-1.0: 462165984030d82259a11f4367a4eed129e94a7b
+timestep_spacing: trailing
+save_size: 1024
+params:
+  num_inference_steps: 50
+  guidance_scale: 7.5
