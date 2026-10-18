@@ -39,6 +39,7 @@ METHODS = ["SDXL + DPM-Solver++", "LCM-LoRA", "SDXL-Turbo", "SDXL-Lightning"]
 SHORT = {"SDXL + DPM-Solver++": "SDXL base", "LCM-LoRA": "LCM-LoRA",
          "SDXL-Turbo": "Turbo", "SDXL-Lightning": "Lightning"}
 HYBRID = "E4 Turbo draft + SDXL refine"
+TURBO_1024 = "SDXL-Turbo @1024 (exploratory)"
 METRICS = [("image_reward", "ImageReward", "higher is better"),
            ("clip_score", "CLIP Score", "higher is better"),
            ("fid", "FID", "lower is better")]
@@ -73,7 +74,10 @@ def log_latency_axis(ax, ticks=(0.1, 0.2, 0.5, 1, 2, 5)):
 # earlier label nor a data point wins.
 OFFSETS = [(8, 5, "left", "bottom"), (8, -5, "left", "top"), (-8, 5, "right", "bottom"),
            (-8, -5, "right", "top"), (0, 10, "center", "bottom"), (0, -10, "center", "top"),
-           (14, 0, "left", "center"), (-14, 0, "right", "center")]
+           (14, 0, "left", "center"), (-14, 0, "right", "center"),
+           (0, 18, "center", "bottom"), (0, -18, "center", "top")]
+# The same positions, left of the point first: for the left one of two close points.
+LEFT_FIRST = [o for o in OFFSETS if o[0] < 0] + [o for o in OFFSETS if o[0] >= 0]
 
 
 def obstacles(ax):
@@ -94,21 +98,24 @@ def obstacles(ax):
     return boxes
 
 
-def place_labels(ax, items, color=TEXT_2, taken=None):
-    """items: [(text, x, y)]. Greedy placement that avoids labels, points and lines.
-    Pass the returned list back in to keep later labels clear of these ones."""
+def place_labels(ax, items, color=TEXT_2, taken=None, offsets=OFFSETS):
+    """items: [(text, x, y)]. Greedy placement that avoids labels, points, lines and the
+    axes edges. Pass the returned list back in to keep later labels clear of these ones."""
     fig = ax.figure
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()
+    frame = ax.get_window_extent(renderer)
     taken = obstacles(ax) if taken is None else taken
     for text, x, y in items:
         best = None
-        for dx, dy, ha, va in OFFSETS:
+        for dx, dy, ha, va in offsets:
             a = ax.annotate(text, (x, y), xytext=(dx, dy), textcoords="offset points", ha=ha, va=va,
                             fontsize=8, color=color)
             b = a.get_window_extent(renderer)
-            box = (b.x0 - 1, b.y0 - 1, b.x1 + 1, b.y1 + 1)
-            clash = any(box[0] < t[2] and t[0] < box[2] and box[1] < t[3] and t[1] < box[3] for t in taken)
+            box = (b.x0 - 2, b.y0 - 2, b.x1 + 2, b.y1 + 2)
+            outside = box[0] < frame.x0 or box[2] > frame.x1 or box[1] < frame.y0 or box[3] > frame.y1
+            clash = outside or any(box[0] < t[2] and t[0] < box[2] and box[1] < t[3] and t[1] < box[3]
+                                   for t in taken)
             if not clash:
                 best = box
                 break
@@ -222,16 +229,21 @@ def e3_figure(e3, out):
 
 
 def e4_figure(e1, out):
-    """RQ3: the hybrid and its no-refine control against every single-method point."""
+    """RQ3: the hybrid and its no-refine control against every single-method point, and the
+    exploratory Turbo runs at 1024 px, the hybrid's output size."""
     single = e1[e1["method"].isin(METHODS)]
     hyb = e1[e1["method"] == HYBRID]
     refined = hyb[hyb["config"] != "draft_only"]
     draft = hyb[hyb["config"] == "draft_only"]
+    turbo_1024 = e1[e1["method"] == TURBO_1024]
     fig, axes = plt.subplots(1, 3, figsize=(12.5, 4), constrained_layout=True)
     for ax, (metric, name, hint) in zip(axes, METRICS):
         style(ax)
         ax.scatter(single["latency_s"], single[metric], s=45, color=CONTEXT, zorder=2,
-                   label="single methods (E1 points, grey)")
+                   label="single methods (E1 points, grey; Turbo at its native 512 px)")
+        ax.scatter(turbo_1024["latency_s"], turbo_1024[metric], s=55, marker=MARKERS[3],
+                   facecolors="white", edgecolors=SERIES[3], linewidths=1.5, zorder=3,
+                   label="Turbo generating at 1024 px (exploratory)")
         for g, i, label in ((refined, 1, "Hybrid: Turbo 1-step draft + SDXL refine, strength 0.5"),
                             (draft, 2, "Turbo 1-step draft only, upscaled (no refine; ~ Turbo 1 step)")):
             ax.scatter(g["latency_s"], g[metric], s=90, color=SERIES[i], marker=MARKERS[i],
@@ -242,13 +254,18 @@ def e4_figure(e1, out):
         taken = place_labels(ax, [("hybrid", r["latency_s"], r[metric]) for _, r in refined.iterrows()]
                              + [("draft only", r["latency_s"], r[metric]) for _, r in draft.iterrows()],
                              color=TEXT)
+        # The two 1024 px Turbo points sit close together: label them before the grey points,
+        # the faster one preferably on its left so neither label reads as the other point's.
+        for i, (_, r) in enumerate(turbo_1024.sort_values("latency_s").iterrows()):
+            taken = place_labels(ax, [(f"Turbo {r['steps']} @1024", r["latency_s"], r[metric])],
+                                 taken=taken, offsets=LEFT_FIRST if i == 0 else OFFSETS)
         # Turbo 1 step is the same model as the draft and sits under it; its label would only
         # crowd the draft's (the legend says so).
         others = single[~((single["method"] == "SDXL-Turbo") & (single["steps"].astype(str) == "1"))]
         place_labels(ax, [(f"{SHORT[r['method']]} {r['steps']}", r["latency_s"], r[metric])
                           for _, r in others.sort_values("latency_s").iterrows()], taken=taken)
     handles, labels = axes[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="outside lower center", ncol=3, frameon=False, fontsize=9)
+    fig.legend(handles, labels, loc="outside lower center", ncol=2, frameon=False, fontsize=9)
     fig.suptitle("E4: two-stage hybrid against single few-step methods on the eval split "
                  "(2,000 COCO prompts)", color=TEXT, fontsize=11, x=0.01, ha="left")
     save(fig, out, "e4_hybrid")
