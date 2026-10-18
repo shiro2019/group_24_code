@@ -1,0 +1,13 @@
+experiment: e1
+split: eval
+seeds:
+- 0
+method: sdxl_turbo
+resolution: 512
+dtype: fp16
+models:
+  stabilityai/sdxl-turbo: 71153311d3dbb46851df1931d3ca6e939de83304
+params:
+  guidance_scale: 0.0
+  num_inference_steps: 1
+name: steps1_cfg0

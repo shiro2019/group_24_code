@@ -1,0 +1,24 @@
+{
+  "method": "sdxl_lightning",
+  "selection": "configs/c_frozen/selection_sdxl_lightning.json",
+  "e1_configs": [
+    "configs/c_frozen/e1/sdxl_lightning_ckpt4_cfg0.yaml",
+    "configs/c_frozen/e1/sdxl_lightning_ckpt2_cfg0.yaml"
+  ],
+  "diversity_config": "configs/c_frozen/diversity/sdxl_lightning.yaml",
+  "splits": {
+    "tune": {
+      "n_prompts": 500,
+      "sha256": "de2fdb918e2183c6039b434f7091677e1b9c7c698b9feabe146327ff84645730"
+    },
+    "eval": {
+      "n_prompts": 2000,
+      "sha256": "7eee9c45bb9f9fc16ff15916030298a7594fbc1368ba895082be091be8b43381"
+    },
+    "diversity": {
+      "n_prompts": 100,
+      "sha256": "e5d26241ffcd0be3b44e5abe353d46b51b7df6ef475070ab92b53db9c4f7ddf4"
+    }
+  },
+  "diversity_rule": "quality-priority point; 100 prompts x seeds 0..7"
+}

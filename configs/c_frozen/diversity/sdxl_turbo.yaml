@@ -1,0 +1,20 @@
+experiment: diversity
+split: diversity
+seeds:
+- 0
+- 1
+- 2
+- 3
+- 4
+- 5
+- 6
+- 7
+method: sdxl_turbo
+resolution: 512
+dtype: fp16
+models:
+  stabilityai/sdxl-turbo: 71153311d3dbb46851df1931d3ca6e939de83304
+params:
+  guidance_scale: 0.0
+  num_inference_steps: 4
+name: steps4_cfg0
