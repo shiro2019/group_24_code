@@ -1,4 +1,4 @@
-# C: official 512px Turbo sweep; selection uses tuning images only.
+# Official 512px Turbo sweep; selection uses tuning images only.
 experiment: e2
 split: tune
 seeds: [0]

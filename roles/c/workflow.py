@@ -1,4 +1,4 @@
-"""Run C's experiments through A's existing modules, with auditable freezing.
+"""Run the Turbo/Lightning experiments and diversity runs through src, with auditable freezing.
 
 Run each phase as a SLURM job; this module never submits jobs from compute nodes.
 No model training and no changes to shared generation/evaluation implementations.
@@ -14,7 +14,7 @@ from pathlib import Path
 
 import yaml
 
-from src.common import REPO_ROOT, SPLITS_DIR, OUTPUTS_DIR, expand_grid, identity, now, read_prompts
+from src.common import REPO_ROOT, SPLITS_DIR, OUTPUTS_DIR, expand_grid, identity, read_prompts
 
 METHODS = ("sdxl_turbo", "sdxl_lightning")
 DIVERSITY_SEEDS = list(range(8))
@@ -28,7 +28,7 @@ def run(module, *args):
 
 
 def audit_splits():
-    """Require A's full, disjoint split sizes before an official experiment."""
+    """Require the full, disjoint splits from src.prepare_data before an official experiment."""
     result, ids = {}, {}
     for split, expected in (("tune", 500), ("eval", 2000), ("diversity", 100)):
         path = SPLITS_DIR / f"{split}.jsonl"
@@ -61,7 +61,7 @@ def write_once(path, data):
 def freeze(selection_path):
     """Export E1 points plus the quality-priority point for diversity.
 
-    A/B can supply their own selection records through the same command.
+    The baseline and LCM-LoRA selection records are frozen through the same command.
     Selection happens only in src.select_configs, before final evaluation.
     """
     selection = json.loads(Path(selection_path).read_text(encoding="utf-8"))
@@ -82,8 +82,8 @@ def freeze(selection_path):
     # On resume reuse the original timestamps/provenance, never overwrite with a
     # freshly rescored selection. If the decision changes, write_once fails.
     write_once(record, selection)
-    # Match the group leader's canonical configs/e1/<method>.yaml + selection
-    # format for C's methods. Reference methods remain owned by A/B.
+    # Write the canonical configs/e1/<method>.yaml + selection record for Turbo and
+    # Lightning; the baseline and LCM-LoRA ones are already in configs/e1/.
     if method in METHODS:
         write_once(REPO_ROOT / "configs/e1" / f"selection_{method}.json", selection)
         canonical = copy.deepcopy(quality)
@@ -117,14 +117,14 @@ def freeze(selection_path):
         point.pop("limit", None)
         path = FROZEN / "e1" / f"{method}_{p['name']}.yaml"
         write_once(path, point)
-        points.append(str(path.relative_to(REPO_ROOT)))
+        points.append(path.relative_to(REPO_ROOT).as_posix())
     diversity = copy.deepcopy(quality)
     diversity.update(experiment="diversity", split="diversity", seeds=DIVERSITY_SEEDS)
     diversity.pop("limit", None)
     div_path = FROZEN / "diversity" / f"{method}.yaml"
     write_once(div_path, diversity)
-    manifest = {"method": method, "selection": str(record.relative_to(REPO_ROOT)),
-                "e1_configs": points, "diversity_config": str(div_path.relative_to(REPO_ROOT)),
+    manifest = {"method": method, "selection": record.relative_to(REPO_ROOT).as_posix(),
+                "e1_configs": points, "diversity_config": div_path.relative_to(REPO_ROOT).as_posix(),
                 "splits": split_info, "diversity_rule": "quality-priority point; 100 prompts x seeds 0..7"}
     write_once(FROZEN / f"manifest_{method}.json", manifest)
     print(json.dumps(manifest, indent=2), flush=True)
@@ -157,10 +157,10 @@ def final(method, phase):
 
 
 def main():
-    ap = argparse.ArgumentParser(__doc__)
+    ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("phase", choices=("audit", "e2", "exploratory", "freeze", "e1", "diversity"))
     ap.add_argument("--method", choices=(*METHODS, "sdxl_base", "lcm_lora"))
-    ap.add_argument("--selection", help="A/B/C's completed src.select_configs JSON")
+    ap.add_argument("--selection", help="completed src.select_configs JSON")
     args = ap.parse_args()
     if args.phase == "audit":
         print(json.dumps(audit_splits(), indent=2))
@@ -175,7 +175,7 @@ def main():
         run("src.evaluate", "--config", config, "--metrics", "clip,imagereward")
     elif args.phase == "e2":
         if args.method not in METHODS:
-            ap.error("C's E2 supports Turbo and Lightning only")
+            ap.error("the e2 phase supports Turbo and Lightning only")
         e2(args.method)
     else:
         if not args.method:

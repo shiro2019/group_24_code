@@ -1,5 +1,5 @@
 #!/bin/bash
-# Role C fresh-account setup: use conda-forge explicitly (no defaults channel).
+# Setup for a fresh account: use conda-forge explicitly (no defaults channel).
 # Run on the head node for package installation only, not model computation.
 set -eo pipefail
 module load anaconda
