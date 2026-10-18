@@ -1,8 +1,8 @@
-"""Report figures from the summary tables (D).
+"""Report figures from the summary tables.
 
     python -m src.plot_results --tables outputs/tables --out outputs/figures
 
-Reads the six tables A builds from the merged metrics CSV (see the tables' README.md)
+Reads the summary tables built from the merged metrics CSV (see the tables' README.md)
 and draws one figure per table, as PNG for slides and PDF for the report:
 
     e1_quality_latency   e1_main.csv           RQ1: every method's frozen points
@@ -14,7 +14,7 @@ and draws one figure per table, as PNG for slides and PDF for the report:
 
 latency_sorted.csv holds the same rows as e1_main.csv and needs no figure of its own.
 
-E5 is not in the six tables yet; pass its raw metric rows (the metrics.csv format) with
+E5 is not in the summary tables yet; pass its raw metric rows (the metrics.csv format) with
 --e5 to also draw
 
     e5_parti             --e5 CSV + e1_main.csv  PartiPrompts against the COCO eval split
@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import pandas as pd  # noqa: E402
 from matplotlib.ticker import FuncFormatter  # noqa: E402
 
-# Reference categorical palette (dataviz skill, light mode), used in this fixed order.
+# Reference categorical palette (light mode), used in this fixed order.
 # Each method also gets its own marker, and lines are labelled directly, so identity
 # never rests on colour alone.
 SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100"]
