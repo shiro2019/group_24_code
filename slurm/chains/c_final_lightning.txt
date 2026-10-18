@@ -1,0 +1,2 @@
+roles.c.workflow e1 --method sdxl_lightning
+roles.c.workflow diversity --method sdxl_lightning

@@ -1,0 +1,7 @@
+roles.c.workflow e2 --method sdxl_turbo
+src.timing --config configs/e2/sdxl_turbo.yaml
+roles.c.workflow e2 --method sdxl_lightning
+src.timing --config configs/e2/sdxl_lightning.yaml
+roles.c.workflow exploratory
+src.timing --config configs/e2/sdxl_lightning_1step.yaml
+roles.c.summarize

@@ -1,0 +1,2 @@
+roles.c.workflow e2 --method sdxl_lightning
+roles.c.workflow exploratory

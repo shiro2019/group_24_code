@@ -1,0 +1,13 @@
+# C: official 512px Turbo sweep; selection uses tuning images only.
+experiment: e2
+split: tune
+seeds: [0]
+method: sdxl_turbo
+resolution: 512
+dtype: fp16
+models:
+  stabilityai/sdxl-turbo: 71153311d3dbb46851df1931d3ca6e939de83304
+params:
+  guidance_scale: 0.0
+grid:
+  num_inference_steps: [1, 2, 3, 4]

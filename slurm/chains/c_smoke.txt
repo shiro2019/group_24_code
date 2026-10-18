@@ -1,0 +1,3 @@
+src.check_env
+src.generate --config configs/c_smoke/sdxl_lightning_1step.yaml
+src.evaluate --config configs/c_smoke/sdxl_lightning_1step.yaml --metrics clip,imagereward

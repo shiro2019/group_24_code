@@ -1,0 +1,15 @@
+{
+  "lcm_selection": {
+    "repository": "https://github.com/shiro2019/group_24_code",
+    "ref": "origin/b/e2-lcm-freeze",
+    "commit": "db866438faec884022e57cca43f7d6cf62818b6d",
+    "path": "configs/e1/selection_lcm_lora.json",
+    "usage": "Read-only dependency for C diversity; not merged into main by C."
+  },
+  "b_attachment_review": {
+    "filename": "b_lcm_review.zip",
+    "sha256": "61a7e221013b12a209db070ac3e1e57e180514b2fda13e1f7c95966ac089e8e7",
+    "e2_rows_matching_github_selection": 24,
+    "note": "Attachment selection is E3 unfused scale sensitivity, not the E2 fused E1 selection. Use GitHub E2 selection for main diversity."
+  }
+}
