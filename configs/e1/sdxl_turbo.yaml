@@ -1,3 +1,7 @@
+# E1 SDXL-Turbo on the eval split: the two points frozen from the E2 tuning sweep
+# (selection record: configs/e1/selection_sdxl_turbo.json). Native 512 px, CFG 0.
+#   quality point:     4 steps (highest tuning ImageReward within the CLIP tolerance)
+#   lowest-step point: 1 step
 experiment: e1
 split: eval
 seeds:

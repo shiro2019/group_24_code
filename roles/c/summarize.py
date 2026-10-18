@@ -57,8 +57,8 @@ def grid(cfg, destination):
         "random_seed": 2026, "prompt_indices": indices, "prompts": selected,
         "configuration": cfg, "note": "Fixed random sample; resized thumbnails, not native-resolution crops."
     }, indent=2), encoding="utf-8")
-    # Also export one identical random prompt across methods as original saved
-    # PNGs, so D can build slides without downloading the full image corpus.
+    # Also export one identical random prompt across methods as the original saved
+    # PNGs, for side-by-side figures without copying the full image corpus.
     example_dir = destination.parent / "example"
     example_dir.mkdir(exist_ok=True)
     manifest_path = example_dir / "manifest.json"
@@ -135,8 +135,8 @@ def main():
     status, complete_e2, measured = [], {}, []
     for path in configs:
         for cfg in expand_grid(load_yaml(path)):
-            # A/B reference freezes also describe their E1 points. Those are
-            # their owners' responsibility; C generates only their diversity.
+            # The baseline and LCM-LoRA freezes also describe their E1 points, which
+            # run from their own configs/e1/ files; only their diversity runs here.
             if cfg["experiment"] == "e1" and cfg["method"] not in ("sdxl_turbo", "sdxl_lightning"):
                 continue
             prompts_path = REPO_ROOT / "data/splits" / f"{cfg['split']}.jsonl"
@@ -187,18 +187,17 @@ def main():
     complete = not pending and bool(status) and all(s["complete"] for s in status)
     report = {"generated_at": now(), "scope_complete": complete,
               "pending_freezes": pending, "configurations": status,
-              "note": "C timing uses A's src.timing on TC2N07 (L40S); A verifies cross-method consistency. CSV contains actual rows only."}
+              "note": "Latency rows come from src.timing; the hardware column records the GPU. CSV contains measured rows only."}
     (out / "status.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     (out / "results.json").write_text(json.dumps({**report, "measurements": measured}, indent=2), encoding="utf-8")
-    lines = ["# C experiment handoff", "", f"Generated: {now()}", "",
+    lines = ["# Turbo, Lightning and diversity summary", "", f"Generated: {now()}", "",
              "| Configuration | Images | Required metrics complete |", "| --- | --- | --- |"]
     for item in status:
         count = f"{item.get('images_found', 0)}/{item.get('images_expected', '?')}"
         lines.append(f"| {item['config_file']} / {item['name']} | {count} | {item['complete']} |")
     lines += ["", "Missing freeze records: " + (", ".join(pending) or "none"), "",
               "Numbers are in metrics_latest.csv; incomplete configurations must not be treated as final results.",
-              "C timing uses A's protocol on TC2N07 (L40S); A verifies consistency with other methods.",
-              "Report and video materials are shared separately with the group."]
+              "Latency comes from src.timing; compare it only across runs on the same GPU type."]
     for experiment, title, metrics in (
         ("e2", "E2 tuning (500 prompts per point)", ["clip_score", "image_reward", "latency_median_s"]),
         ("e2_exploratory", "Exploratory one-step Lightning (excluded from selection)", ["clip_score", "image_reward", "latency_median_s"]),

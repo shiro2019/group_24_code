@@ -12,6 +12,7 @@ CA6127 Transformer and Generative Adversarial Networks — Group 24 课程项目
 docs/      项目方案与工作约定
 configs/   每个实验的配置文件（方法、步数、guidance、seed 等），不在代码里手改参数
 src/       生成、评估、计时等 Python 代码
+roles/     基于 src/ 的实验编排脚本（roles/c：Turbo、Lightning 的调参、冻结、E1 和四方法多样性）
 slurm/     集群作业脚本
 data/      数据集与 prompt 划分（不提交到仓库）
 outputs/   生成的图片、指标 CSV、日志（不提交到仓库）

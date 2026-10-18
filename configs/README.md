@@ -4,7 +4,7 @@
 
 | 字段 | 含义 |
 | --- | --- |
-| `experiment` | 实验编号，如 `e1`、`e2`、`smoke`，决定输出目录 |
+| `experiment` | 实验编号，如 `e1`、`e2`、`smoke`，决定输出目录；探索性运行用单独的编号（如 `e2_exploratory`、`c_smoke_exploratory`），不和正式结果混在一起 |
 | `split` | `tune` / `eval` / `diversity`，对应 `data/splits/<split>.jsonl`；也可用 `prompts_file` 指定其他 prompt 文件。**必填**：用 `prompts_file` 时也要写，它决定输出目录（如 E5 可写 `split: parti`） |
 | `prompts_file` | 自定义 prompt 文件（JSONL，每行至少有 `prompt_id` 和 `prompt` 两个字段），E5 等非 COCO 实验使用 |
 | `limit` | 只取前 N 条 prompt（调试用） |
@@ -56,5 +56,12 @@ Lightning 的 `num_inference_steps` 由代码自动设为 `lightning_steps`，�
 - 生成和打分开始前，会先检查所有输出目录：已有的 `config.yaml` 与当前设置不一致时直接报错，不占用 GPU 时间，也不会把不同设置的图片混在一起打分。需要重跑时换一个名字，或把旧目录移走。
 - 打分时如果图片数量不全会报错，确实需要时加 `--allow-partial`。
 - `--only` 指定的名字不存在时报错。
+
+## 目录
+
+- `configs/e1/`：各方法冻结的 E1 配置及选择记录 `selection_<方法>.json`。
+- `configs/e2/`、`configs/e3/`、`configs/e4/`：各实验的调参网格与评测配置。
+- `configs/c_frozen/`：`python -m roles.c.workflow freeze` 写出的逐点 E1 配置、多样性配置（`diversity/`）和执行清单（含数据划分的 SHA-256）；重复执行时若与已有记录不一致会报错。
+- `configs/smoke/`、`configs/c_smoke/`：冒烟测试。
 
 输出位置：`outputs/<experiment>/<split>/<method>/<name>/`，内含图片 `<prompt_id>_<seed>.png`、`config.yaml`、每个分片一份 `run_info_<分片>.json`（库版本、GPU、模型 revision、调度器设置）和 UNet 调用日志 `calls_<分片>.jsonl`。

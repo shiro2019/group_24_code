@@ -1,1 +1,1 @@
-"""Role-specific orchestration; shared src/ remains maintained by A."""
+"""Per-method experiment orchestration built on the shared src/ modules."""
