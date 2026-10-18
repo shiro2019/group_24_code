@@ -1,0 +1,89 @@
+{
+  "source_config": "configs/e2/sdxl_lightning.yaml",
+  "selected_at": "2026-10-18T06:31:52Z",
+  "git_commit": "1033748",
+  "clip_tolerance": 1.0,
+  "best_clip_score": 25.903,
+  "quality": {
+    "experiment": "e2",
+    "split": "tune",
+    "seeds": [
+      0
+    ],
+    "method": "sdxl_lightning",
+    "resolution": 1024,
+    "dtype": "fp16",
+    "models": {
+      "stabilityai/stable-diffusion-xl-base-1.0": "462165984030d82259a11f4367a4eed129e94a7b",
+      "ByteDance/SDXL-Lightning": "c9a24f48e1c025556787b0c58dd67a091ece2e44"
+    },
+    "params": {
+      "guidance_scale": 0.0
+    },
+    "lightning_steps": 4,
+    "name": "ckpt4_cfg0"
+  },
+  "lowest_step": {
+    "experiment": "e2",
+    "split": "tune",
+    "seeds": [
+      0
+    ],
+    "method": "sdxl_lightning",
+    "resolution": 1024,
+    "dtype": "fp16",
+    "models": {
+      "stabilityai/stable-diffusion-xl-base-1.0": "462165984030d82259a11f4367a4eed129e94a7b",
+      "ByteDance/SDXL-Lightning": "c9a24f48e1c025556787b0c58dd67a091ece2e44"
+    },
+    "params": {
+      "guidance_scale": 0.0
+    },
+    "lightning_steps": 2,
+    "name": "ckpt2_cfg0"
+  },
+  "candidates": [
+    {
+      "name": "ckpt2_cfg0",
+      "steps": 2,
+      "image_reward": {
+        "value": "0.5896",
+        "n_samples": "500",
+        "timestamp": "2026-10-18T06:30:46Z"
+      },
+      "clip_score": {
+        "value": "25.903",
+        "n_samples": "500",
+        "timestamp": "2026-10-18T06:30:46Z"
+      }
+    },
+    {
+      "name": "ckpt4_cfg0",
+      "steps": 4,
+      "image_reward": {
+        "value": "0.6741",
+        "n_samples": "500",
+        "timestamp": "2026-10-18T06:31:08Z"
+      },
+      "clip_score": {
+        "value": "25.8769",
+        "n_samples": "500",
+        "timestamp": "2026-10-18T06:31:08Z"
+      }
+    },
+    {
+      "name": "ckpt8_cfg0",
+      "steps": 8,
+      "image_reward": {
+        "value": "0.6565",
+        "n_samples": "500",
+        "timestamp": "2026-10-18T06:31:30Z"
+      },
+      "clip_score": {
+        "value": "25.6112",
+        "n_samples": "500",
+        "timestamp": "2026-10-18T06:31:30Z"
+      }
+    }
+  ]
+}

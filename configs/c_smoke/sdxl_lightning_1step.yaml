@@ -1,0 +1,16 @@
+# Validate the x0 scheduler separately before the 500-prompt exploratory run.
+experiment: c_smoke_exploratory
+split: tune
+limit: 2
+seeds: [0]
+method: sdxl_lightning
+resolution: 1024
+dtype: fp16
+exploratory: true
+models:
+  stabilityai/stable-diffusion-xl-base-1.0: 462165984030d82259a11f4367a4eed129e94a7b
+  ByteDance/SDXL-Lightning: c9a24f48e1c025556787b0c58dd67a091ece2e44
+lightning_steps: 1
+name: ckpt1_exploratory
+params:
+  guidance_scale: 0.0

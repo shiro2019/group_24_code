@@ -1,0 +1,101 @@
+{
+  "source_config": "configs/e2/sdxl_turbo.yaml",
+  "selected_at": "2026-10-18T06:09:20Z",
+  "git_commit": "1033748",
+  "clip_tolerance": 1.0,
+  "best_clip_score": 26.3775,
+  "quality": {
+    "experiment": "e2",
+    "split": "tune",
+    "seeds": [
+      0
+    ],
+    "method": "sdxl_turbo",
+    "resolution": 512,
+    "dtype": "fp16",
+    "models": {
+      "stabilityai/sdxl-turbo": "71153311d3dbb46851df1931d3ca6e939de83304"
+    },
+    "params": {
+      "guidance_scale": 0.0,
+      "num_inference_steps": 4
+    },
+    "name": "steps4_cfg0"
+  },
+  "lowest_step": {
+    "experiment": "e2",
+    "split": "tune",
+    "seeds": [
+      0
+    ],
+    "method": "sdxl_turbo",
+    "resolution": 512,
+    "dtype": "fp16",
+    "models": {
+      "stabilityai/sdxl-turbo": "71153311d3dbb46851df1931d3ca6e939de83304"
+    },
+    "params": {
+      "guidance_scale": 0.0,
+      "num_inference_steps": 1
+    },
+    "name": "steps1_cfg0"
+  },
+  "candidates": [
+    {
+      "name": "steps1_cfg0",
+      "steps": 1,
+      "image_reward": {
+        "value": "0.6864",
+        "n_samples": "500",
+        "timestamp": "2026-10-18T06:07:51Z"
+      },
+      "clip_score": {
+        "value": "26.3775",
+        "n_samples": "500",
+        "timestamp": "2026-10-18T06:07:51Z"
+      }
+    },
+    {
+      "name": "steps2_cfg0",
+      "steps": 2,
+      "image_reward": {
+        "value": "0.7174",
+        "n_samples": "500",
+        "timestamp": "2026-10-18T06:08:13Z"
+      },
+      "clip_score": {
+        "value": "26.1386",
+        "n_samples": "500",
+        "timestamp": "2026-10-18T06:08:13Z"
+      }
+    },
+    {
+      "name": "steps3_cfg0",
+      "steps": 3,
+      "image_reward": {
+        "value": "0.7317",
+        "n_samples": "500",
+        "timestamp": "2026-10-18T06:08:35Z"
+      },
+      "clip_score": {
+        "value": "26.0867",
+        "n_samples": "500",
+        "timestamp": "2026-10-18T06:08:35Z"
+      }
+    },
+    {
+      "name": "steps4_cfg0",
+      "steps": 4,
+      "image_reward": {
+        "value": "0.7397",
+        "n_samples": "500",
+        "timestamp": "2026-10-18T06:08:57Z"
+      },
+      "clip_score": {
+        "value": "26.0613",
+        "n_samples": "500",
+        "timestamp": "2026-10-18T06:08:57Z"
+      }
+    }
+  ]
+}

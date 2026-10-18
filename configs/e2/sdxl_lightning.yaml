@@ -1,0 +1,14 @@
+# C: cross-checkpoint comparison, NOT a fixed-model step ablation.
+experiment: e2
+split: tune
+seeds: [0]
+method: sdxl_lightning
+resolution: 1024
+dtype: fp16
+models:
+  stabilityai/stable-diffusion-xl-base-1.0: 462165984030d82259a11f4367a4eed129e94a7b
+  ByteDance/SDXL-Lightning: c9a24f48e1c025556787b0c58dd67a091ece2e44
+params:
+  guidance_scale: 0.0
+grid:
+  lightning_steps: [2, 4, 8]

@@ -1,0 +1,2 @@
+roles.c.workflow e1 --method sdxl_turbo
+roles.c.workflow diversity --method sdxl_turbo
