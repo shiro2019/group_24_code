@@ -1,0 +1,4 @@
+# Exploratory Turbo at 1024 px: 2 x 2,000 eval prompts, then scoring with FID. One job:
+#   sbatch --job-name=e1-turbo1024 slurm/chain.sbatch slurm/chains/e1_turbo_1024.txt
+src.generate --config configs/e1/sdxl_turbo_1024.yaml
+src.evaluate --config configs/e1/sdxl_turbo_1024.yaml --metrics clip,imagereward,fid
