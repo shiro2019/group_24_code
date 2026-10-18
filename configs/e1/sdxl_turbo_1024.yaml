@@ -1,0 +1,19 @@
+# Exploratory Turbo point at 1024 px on the eval split, outside the official 512 px setting.
+# Same steps (1 and 4, the frozen E1 Turbo points from the E2 tuning selection) and seed
+# as the 512 px E1 Turbo runs, so the only change is the generation resolution. Metrics
+# are still computed at 512 px. It checks how much of Turbo's result depends on its native
+# resolution, and gives a native-1024 Turbo reference for the E4 draft (512 draft upscaled
+# to 1024). Output folders end in _res1024; keep them out of the main E1 tables.
+experiment: e1
+split: eval
+seeds: [0]
+method: sdxl_turbo
+resolution: 1024
+dtype: fp16
+exploratory: true
+models:
+  stabilityai/sdxl-turbo: 71153311d3dbb46851df1931d3ca6e939de83304
+params:
+  guidance_scale: 0.0
+grid:
+  num_inference_steps: [1, 4]

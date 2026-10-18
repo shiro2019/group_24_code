@@ -1,0 +1,4 @@
+# L40S latency for the LCM-LoRA E1 points and the exploratory Turbo 1024 points:
+#   sbatch --job-name=timing --nodelist=TC2N07 slurm/chain.sbatch slurm/chains/timing_l40s.txt
+src.timing --config configs/e1/lcm_lora.yaml
+src.timing --config configs/e1/sdxl_turbo_1024.yaml

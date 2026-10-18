@@ -10,13 +10,13 @@
 | `limit` | 只取前 N 条 prompt（调试用） |
 | `seeds` | seed 列表，每条 prompt 对每个 seed 各生成一张 |
 | `method` | `sdxl_base` / `lcm_lora` / `sdxl_turbo` / `sdxl_lightning`；E4 两阶段用 `hybrid`，只能由 `src.hybrid` 运行 |
-| `resolution` | 生成分辨率（Turbo 512，其余 1024） |
+| `resolution` | 生成分辨率（Turbo 512，其余 1024）；Turbo 1024 只作探索性参照（`configs/e1/sdxl_turbo_1024.yaml`） |
 | `dtype` | 计算精度，默认 `fp16` |
 | `models` | `{仓库名: revision}`，已固定为冒烟测试实际使用的版本 |
 | `timestep_spacing` | 仅基线和 E4 精修阶段：调度器的时间步间隔，默认 `trailing`（第一步从 t=999 开始） |
 | `lightning_steps` | Lightning 使用哪个步数的 checkpoint（1 / 2 / 4 / 8） |
 | `lora_fuse`、`lora_scale` | LCM-LoRA 是否融合及 adapter scale；E3 用 `lora_fuse: false` |
-| `exploratory` | 设为 `true` 才允许超出官方推荐范围的设置（例如 Turbo、Lightning 开 CFG，或 Lightning 1 步）。它作用于整个文件，所以探索性的配置要单独放一个文件，不能和正式配置写在同一个网格里；这类文件不参与配置选择 |
+| `exploratory` | 设为 `true` 才允许超出官方推荐范围的设置（例如 Turbo、Lightning 开 CFG，或 Lightning 1 步），也用来标记主协议之外的参照运行（例如 Turbo 1024）。它作用于整个文件，所以探索性的配置要单独放一个文件，不能和正式配置写在同一个网格里；这类文件不参与配置选择 |
 | `name` | 单个配置的输出子目录名；不写时按参数自动生成。使用 `grid` 时总是自动生成，并包含每个被扫描的字段 |
 | `save_size` | 保存尺寸，默认 512（指标都在 512 下计算，节省磁盘配额） |
 | `full_res_first_n` | 前 N 条 prompt 另存原尺寸图到 `full/`，默认 20，用于局部裁剪图；图片本身已是保存尺寸时（如 Turbo 512）不另存 |
