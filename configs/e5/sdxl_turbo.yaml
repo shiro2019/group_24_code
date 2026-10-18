@@ -1,0 +1,14 @@
+# E5 hard prompts: the frozen E1 quality point of SDXL-Turbo (PR #9, configs/e1/sdxl_turbo.yaml:
+# 4 steps, guidance 0, native 512 px) on the frozen PartiPrompts list.
+experiment: e5
+split: parti
+prompts_file: configs/e5/parti_prompts.jsonl
+seeds: [0]
+method: sdxl_turbo
+resolution: 512
+dtype: fp16
+models:
+  stabilityai/sdxl-turbo: 71153311d3dbb46851df1931d3ca6e939de83304
+params:
+  num_inference_steps: 4
+  guidance_scale: 0.0
