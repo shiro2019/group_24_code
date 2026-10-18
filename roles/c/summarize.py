@@ -114,9 +114,13 @@ def main():
                ("sdxl_turbo", "sdxl_lightning", "sdxl_lightning_1step")]
     configs += sorted((FROZEN / "e1").glob("*.yaml"))
     configs += sorted((FROZEN / "diversity").glob("*.yaml"))
-    status, complete_e2 = [], {}
+    status, complete_e2, measured = [], {}, []
     for path in configs:
         for cfg in expand_grid(load_yaml(path)):
+            # A/B reference freezes also describe their E1 points. Those are
+            # their owners' responsibility; C generates only their diversity.
+            if cfg["experiment"] == "e1" and cfg["method"] not in ("sdxl_turbo", "sdxl_lightning"):
+                continue
             prompts_path = REPO_ROOT / "data/splits" / f"{cfg['split']}.jsonl"
             if not prompts_path.exists():
                 status.append({"config_file": str(path.relative_to(REPO_ROOT)), "name": cfg["name"],
@@ -131,18 +135,27 @@ def main():
                 wanted += ["fid"]
             if cfg["split"] == "diversity":
                 wanted += ["lpips_diversity"]
+            timed = cfg["experiment"] in ("e2", "e2_exploratory", "e1")
+            timing_metrics = ["latency_median_s", "latency_iqr_s", "peak_mem_gb"] if timed else []
+            wanted += timing_metrics
             missing = []
+            scored = {}
             for metric in wanted:
                 row = lookup.get((cfg["experiment"], cfg["split"], cfg["method"], cfg["name"], metric))
-                n = len(prompts) if metric == "lpips_diversity" else len(files)
+                n = 20 if metric in timing_metrics else (len(prompts) if metric == "lpips_diversity" else len(files))
                 if row is None or int(row["n_samples"]) != n:
                     missing.append(metric)
+                else:
+                    scored[metric] = row
             conflict = check_identity(folder, cfg)
             complete = found == len(files) and not missing and not conflict
             item = {"config_file": str(path.relative_to(REPO_ROOT)), "name": cfg["name"],
                     "images_found": found, "images_expected": len(files), "missing_full_metrics": missing,
                     "config_conflict": conflict, "complete": complete}
             status.append(item)
+            if complete:
+                measured.append({"config": cfg, "metrics": scored, "n_prompts": len(prompts),
+                                 "n_images": found, "config_file": str(path.relative_to(REPO_ROOT))})
             if complete and cfg["experiment"] == "e2":
                 complete_e2.setdefault(cfg["method"], []).append(cfg)
             if complete and cfg["split"] == "diversity":
@@ -153,9 +166,12 @@ def main():
             sweep_artifacts(points, rows, out)
     pending = [m for m in ("sdxl_turbo", "sdxl_lightning", "sdxl_base", "lcm_lora")
                if not (FROZEN / f"manifest_{m}.json").exists()]
-    report = {"generated_at": now(), "pending_freezes": pending, "configurations": status,
-              "note": "Latency still requires A's common-GPU measurements; CSV contains actual rows only."}
+    complete = not pending and bool(status) and all(s["complete"] for s in status)
+    report = {"generated_at": now(), "scope_complete": complete,
+              "pending_freezes": pending, "configurations": status,
+              "note": "C timing uses A's src.timing on TC2N07 (L40S); A verifies cross-method consistency. CSV contains actual rows only."}
     (out / "status.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    (out / "results.json").write_text(json.dumps({**report, "measurements": measured}, indent=2), encoding="utf-8")
     lines = ["# C experiment handoff", "", f"Generated: {now()}", "",
              "| Configuration | Images | Required metrics complete |", "| --- | --- | --- |"]
     for item in status:
@@ -163,8 +179,23 @@ def main():
         lines.append(f"| {item['config_file']} / {item['name']} | {count} | {item['complete']} |")
     lines += ["", "Missing freeze records: " + (", ".join(pending) or "none"), "",
               "Numbers are in metrics_latest.csv; incomplete configurations must not be treated as final results.",
-              "Latency and peak-memory comparison await A's measurements on a common GPU.",
+              "C timing uses A's protocol on TC2N07 (L40S); A verifies consistency with other methods.",
               "Report and video text: docs/c_methods_and_evidence.md and docs/c_video_outline.md."]
+    for experiment, title, metrics in (
+        ("e2", "E2 tuning (500 prompts per point)", ["clip_score", "image_reward", "latency_median_s"]),
+        ("e2_exploratory", "Exploratory one-step Lightning (excluded from selection)", ["clip_score", "image_reward", "latency_median_s"]),
+        ("e1", "Frozen E1 (2,000 prompts per point)", ["clip_score", "image_reward", "fid", "latency_median_s"]),
+        ("diversity", "Diversity (100 prompts x 8 seeds per method)", ["lpips_diversity", "clip_score", "image_reward"]),
+    ):
+        subset = [m for m in measured if m["config"]["experiment"] == experiment]
+        if not subset:
+            continue
+        lines += ["", "## " + title, "", "| Method | Config | Native px | " + " | ".join(metrics) + " |",
+                  "| --- | --- | ---: | " + " | ".join("---:" for _ in metrics) + " |"]
+        for m in subset:
+            cfg = m["config"]
+            values = [m["metrics"][metric]["value"] for metric in metrics]
+            lines.append(f"| {cfg['method']} | {cfg['name']} | {cfg['resolution']} | " + " | ".join(values) + " |")
     (out / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2))
 
