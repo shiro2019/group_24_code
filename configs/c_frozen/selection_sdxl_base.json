@@ -1,0 +1,187 @@
+{
+  "source_config": "configs/e2/sdxl_base.yaml",
+  "selected_at": "2026-10-13T01:46:54Z",
+  "git_commit": "14bdc8d",
+  "clip_tolerance": 1.0,
+  "best_clip_score": 27.0634,
+  "quality": {
+    "experiment": "e2",
+    "split": "tune",
+    "seeds": [
+      0
+    ],
+    "method": "sdxl_base",
+    "resolution": 1024,
+    "dtype": "fp16",
+    "models": {
+      "stabilityai/stable-diffusion-xl-base-1.0": "462165984030d82259a11f4367a4eed129e94a7b"
+    },
+    "timestep_spacing": "trailing",
+    "params": {
+      "num_inference_steps": 50,
+      "guidance_scale": 7.5
+    },
+    "name": "steps50_cfg7.5"
+  },
+  "lowest_step": {
+    "experiment": "e2",
+    "split": "tune",
+    "seeds": [
+      0
+    ],
+    "method": "sdxl_base",
+    "resolution": 1024,
+    "dtype": "fp16",
+    "models": {
+      "stabilityai/stable-diffusion-xl-base-1.0": "462165984030d82259a11f4367a4eed129e94a7b"
+    },
+    "timestep_spacing": "trailing",
+    "params": {
+      "num_inference_steps": 4,
+      "guidance_scale": 7.5
+    },
+    "name": "steps4_cfg7.5"
+  },
+  "candidates": [
+    {
+      "name": "steps4_cfg5",
+      "steps": 4,
+      "image_reward": {
+        "value": "0.0611",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:37:51Z"
+      },
+      "clip_score": {
+        "value": "26.4405",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:37:51Z"
+      }
+    },
+    {
+      "name": "steps8_cfg5",
+      "steps": 8,
+      "image_reward": {
+        "value": "0.5453",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:39:03Z"
+      },
+      "clip_score": {
+        "value": "26.84",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:39:03Z"
+      }
+    },
+    {
+      "name": "steps15_cfg5",
+      "steps": 15,
+      "image_reward": {
+        "value": "0.6065",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:40:17Z"
+      },
+      "clip_score": {
+        "value": "26.3443",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:40:17Z"
+      }
+    },
+    {
+      "name": "steps25_cfg5",
+      "steps": 25,
+      "image_reward": {
+        "value": "0.6298",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:41:31Z"
+      },
+      "clip_score": {
+        "value": "26.1245",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:41:31Z"
+      }
+    },
+    {
+      "name": "steps50_cfg5",
+      "steps": 50,
+      "image_reward": {
+        "value": "0.6423",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:42:43Z"
+      },
+      "clip_score": {
+        "value": "26.1323",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:42:43Z"
+      }
+    },
+    {
+      "name": "steps4_cfg7.5",
+      "steps": 4,
+      "image_reward": {
+        "value": "-0.0848",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:38:27Z"
+      },
+      "clip_score": {
+        "value": "26.391",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:38:27Z"
+      }
+    },
+    {
+      "name": "steps8_cfg7.5",
+      "steps": 8,
+      "image_reward": {
+        "value": "0.6074",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:39:40Z"
+      },
+      "clip_score": {
+        "value": "27.0634",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:39:40Z"
+      }
+    },
+    {
+      "name": "steps15_cfg7.5",
+      "steps": 15,
+      "image_reward": {
+        "value": "0.7195",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:40:54Z"
+      },
+      "clip_score": {
+        "value": "26.6413",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:40:54Z"
+      }
+    },
+    {
+      "name": "steps25_cfg7.5",
+      "steps": 25,
+      "image_reward": {
+        "value": "0.7306",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:42:07Z"
+      },
+      "clip_score": {
+        "value": "26.467",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:42:07Z"
+      }
+    },
+    {
+      "name": "steps50_cfg7.5",
+      "steps": 50,
+      "image_reward": {
+        "value": "0.7425",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:43:19Z"
+      },
+      "clip_score": {
+        "value": "26.5198",
+        "n_samples": "500",
+        "timestamp": "2026-10-13T01:43:19Z"
+      }
+    }
+  ]
+}

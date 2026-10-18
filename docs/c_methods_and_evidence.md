@@ -29,6 +29,6 @@ Latency comparisons use A's common-GPU measurements with warm-up, batch size one
 
 ## Results status and writing rules
 
-No group experiment numbers are available in this document yet. Populate the final analysis from full metric CSV rows and frozen configurations after GPU jobs succeed. Report unsuccessful or incomplete runs explicitly.
+The completed measurements and analysis are in [C results](c_results.md). All 16 planned C configurations passed the image-count, metric-count and configuration-identity checks; final SLURM job 43644 completed with exit code 0. This methods document keeps literature evidence separate from our measured results.
 
 Required analysis: identify the tuning-selected points, quantify quality changes across the Turbo steps and Lightning checkpoints, compare per-prompt seed diversity together with text alignment, and state the native-resolution and sample-size limitations. Describe the sign and size of observed differences; do not write a winner or failure explanation in advance.
