@@ -13,6 +13,11 @@ and draws one figure per table, as PNG for slides and PDF for the report:
     diversity            diversity.csv         seed diversity of the quality points
 
 latency_sorted.csv holds the same rows as e1_main.csv and needs no figure of its own.
+
+E5 is not in the six tables yet; pass its raw metric rows (the metrics.csv format) with
+--e5 to also draw
+
+    e5_parti             --e5 CSV + e1_main.csv  PartiPrompts against the COCO eval split
 """
 
 import argparse
@@ -37,6 +42,7 @@ METHODS = ["SDXL + DPM-Solver++", "LCM-LoRA", "SDXL-Turbo", "SDXL-Lightning"]
 SHORT = {"SDXL + DPM-Solver++": "SDXL base", "LCM-LoRA": "LCM-LoRA",
          "SDXL-Turbo": "Turbo", "SDXL-Lightning": "Lightning"}
 HYBRID = "E4 Turbo draft + SDXL refine"
+METHOD_IDS = dict(zip(["sdxl_base", "lcm_lora", "sdxl_turbo", "sdxl_lightning"], METHODS))
 METRICS = [("image_reward", "ImageReward", "higher is better"),
            ("clip_score", "CLIP Score", "higher is better"),
            ("fid", "FID", "lower is better")]
@@ -303,10 +309,46 @@ def diversity_figure(div, out):
     save(fig, out, "diversity")
 
 
+def e5_figure(e5, e1, out):
+    """Generalisation: each method's quality point on the PartiPrompts subset, with the same
+    configuration on the COCO eval split as a grey reference. Rows sorted by Parti ImageReward."""
+    parti = e5.pivot_table(index=["method", "config"], columns="metric", values="value").reset_index()
+    parti["method"] = parti["method"].map(METHOD_IDS)
+    n = int(e5["n_samples"].iloc[0])
+    coco = e1[e1["role"] == "quality"].set_index(["method", "config"])
+    parti = parti.sort_values("image_reward")
+    labels = [f"{SHORT[m]} ({c})" for m, c in zip(parti["method"], parti["config"])]
+    fig, axes = plt.subplots(1, 2, figsize=(10, 2.9), constrained_layout=True, sharey=True)
+    for ax, (metric, name, hint) in zip(axes, METRICS[:2]):
+        style(ax)
+        ax.grid(axis="y", visible=False)
+        ys = list(range(len(parti)))
+        ref = [coco.loc[(m, c), metric] for m, c in zip(parti["method"], parti["config"])]
+        ax.hlines(ys, ref, parti[metric], color=GRID, linewidth=2, zorder=2)
+        ax.scatter(ref, ys, s=60, facecolors="white", edgecolors=CONTEXT, linewidths=1.5, zorder=3,
+                   label="COCO eval split (E1, 2,000 prompts)")
+        ax.scatter(parti[metric], ys, s=70, color=SERIES[0], edgecolors="white", linewidths=1.5,
+                   zorder=4, label=f"PartiPrompts subset (E5, {n} prompts)")
+        for y, v in zip(ys, parti[metric]):
+            ax.annotate(f"{v:.3f}" if v < 10 else f"{v:.2f}", (v, y), xytext=(0, 8),
+                        textcoords="offset points", ha="center", fontsize=8, color=TEXT_2)
+        ax.set_yticks(ys, labels)
+        ax.margins(x=0.15, y=0.2)
+        title(ax, name, hint)
+    handles, legend_labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles[::-1], legend_labels[::-1], loc="outside lower center", ncol=2, frameon=False,
+               fontsize=9)
+    fig.suptitle("E5: quality-priority points on PartiPrompts (quantity, text, positioning); "
+                 "the prompt sets differ, so compare ranks, not levels", color=TEXT, fontsize=11,
+                 x=0.01, ha="left")
+    save(fig, out, "e5_parti")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--tables", required=True, help="folder with the summary tables")
     ap.add_argument("--out", default="outputs/figures")
+    ap.add_argument("--e5", help="raw E5 metric rows (metrics.csv format); adds the E5 figure")
     args = ap.parse_args()
     tables, out = Path(args.tables), Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -319,6 +361,8 @@ def main():
     e4_figure(e1, out)
     e4_strength_figure(read("e4_strength_tune.csv"), out)
     diversity_figure(read("diversity.csv"), out)
+    if args.e5:
+        e5_figure(pd.read_csv(args.e5), e1, out)
 
 
 if __name__ == "__main__":
