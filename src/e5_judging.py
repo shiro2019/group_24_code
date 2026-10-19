@@ -1,0 +1,288 @@
+"""E5 human judging: blind packages for the judges, then failure rates from their sheets.
+
+    python -m src.e5_judging pack  --images outputs/e5/parti --out e5_judging
+    python -m src.e5_judging score --key e5_judging/_key/key.csv --sheets returned/ --out e5_results
+
+pack: every E5 image (4 methods x 87 frozen prompts) gets a random image id. Prompts are
+dealt to the four judges per challenge, so each judge sees all four images of their
+prompts and a similar mix of challenges. 20% of the images, sampled per method and
+challenge, also go to a second judge (the next one in JUDGES) for an independent check.
+Each judge gets a folder with the images (re-saved without metadata) and a sheet with
+two tabs, primary and re-check. Method names appear only in _key/key.csv.
+
+score: reads the returned sheets, writes the re-check disagreements for discussion and
+the failure rate per method and challenge. A filled-in "final" column in the
+disagreements file overrides the primary judgment after the discussion.
+"""
+
+import argparse
+import csv
+import json
+import math
+import random
+import shutil
+from collections import Counter, defaultdict
+from pathlib import Path
+
+from openpyxl import Workbook, load_workbook
+from openpyxl.drawing.image import Image as XLImage
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.worksheet.datavalidation import DataValidation
+from PIL import Image
+
+from src.common import REPO_ROOT
+
+PROMPTS = REPO_ROOT / "configs" / "e5" / "parti_prompts.jsonl"
+JUDGES = ["A", "B", "C", "D"]
+RECHECK_SHARE = 0.2
+SEED = 2026
+METHODS = {"sdxl_base": "SDXL + DPM-Solver++", "lcm_lora": "LCM-LoRA",
+           "sdxl_turbo": "SDXL-Turbo", "sdxl_lightning": "SDXL-Lightning"}
+CHALLENGES = {  # challenge -> (label, what passes)
+    "quantity": ("数量", "prompt 里每个带数量的对象，数量都完全正确"),
+    "writing": ("文字", "要求的文字全部出现且拼写正确（不区分大小写，忽略标点）"),
+    "position": ("空间/属性", "prompt 指定的相对位置和属性都成立"),
+}
+VERDICTS = ["通过", "失败", "无法判断"]
+THUMB_PX = 256
+FONT = "Arial"
+INPUT_FILL = PatternFill("solid", start_color="FFF2CC")
+HEADER = ["序号", "图片编号", "图片", "类别", "Prompt", "通过标准", "判定", "备注"]
+
+
+def load_prompts(path=PROMPTS):
+    return [json.loads(line) for line in open(path, encoding="utf-8") if line.strip()]
+
+
+def find_images(root, prompts):
+    """{(method, prompt_id): path}; each method folder holds exactly one config."""
+    found = {}
+    for method in METHODS:
+        configs = [d for d in (Path(root) / method).iterdir() if d.is_dir()]
+        assert len(configs) == 1, f"{method}: expected one config folder, found {configs}"
+        for p in prompts:
+            path = configs[0] / f"{p['prompt_id']}_0.png"
+            assert path.exists(), f"missing {path}"
+            found[(method, p["prompt_id"])] = (configs[0].name, path)
+    return found
+
+
+def plan(prompts, rng):
+    """Image rows with id, judge and re-check judge."""
+    judge_of, turn = {}, 0
+    for challenge in CHALLENGES:
+        ids = [p["prompt_id"] for p in prompts if p["challenge"] == challenge]
+        rng.shuffle(ids)
+        for pid in ids:
+            judge_of[pid] = JUDGES[turn % len(JUDGES)]
+            turn += 1
+    rows = [{"prompt_id": p["prompt_id"], "prompt": p["prompt"], "challenge": p["challenge"],
+             "method": m, "judge": judge_of[p["prompt_id"]], "recheck_judge": ""}
+            for p in prompts for m in METHODS]
+    for row, num in zip(rows, rng.sample(range(1000, 10000), len(rows))):
+        row["image_id"] = f"img{num}"
+    cells = defaultdict(list)
+    for row in rows:
+        cells[(row["method"], row["challenge"])].append(row)
+    for cell in cells.values():
+        for row in rng.sample(cell, math.ceil(RECHECK_SHARE * len(cell))):
+            row["recheck_judge"] = JUDGES[(JUDGES.index(row["judge"]) + 1) % len(JUDGES)]
+    return rows
+
+
+def write_tab(ws, rows, folder):
+    ws.append(HEADER)
+    for cell in ws[1]:
+        cell.font = Font(name=FONT, bold=True)
+    widths = [6, 11, 37, 9, 40, 30, 11, 30]
+    for col, w in zip("ABCDEFGH", widths):
+        ws.column_dimensions[col].width = w
+    dv = DataValidation(type="list", formula1='"' + ",".join(VERDICTS) + '"', allow_blank=True)
+    ws.add_data_validation(dv)
+    for i, row in enumerate(rows, start=1):
+        label, rule = CHALLENGES[row["challenge"]]
+        ws.append([i, row["image_id"], None, label, row["prompt"], rule, None, None])
+        r = ws.max_row
+        thumb = folder / "thumbs" / f"{row['image_id']}.png"
+        img = XLImage(str(thumb))
+        img.anchor = f"C{r}"
+        ws.add_image(img)
+        ws.row_dimensions[r].height = THUMB_PX * 0.75 + 6
+        for cell in ws[r]:
+            cell.font = Font(name=FONT)
+            cell.alignment = Alignment(vertical="center", wrap_text=True)
+        ws[f"B{r}"].hyperlink = f"images/{row['image_id']}.png"
+        for col in "GH":
+            ws[f"{col}{r}"].fill = INPUT_FILL
+        dv.add(f"G{r}")
+    ws.freeze_panes = "A2"
+
+
+def write_guide(ws, judge, n_primary, n_recheck):
+    lines = [
+        f"E5 人工判定 — 判定人 {judge}",
+        "",
+        "要填的格子：「初判」和「复核」两页里黄色的「判定」（下拉选择）和「备注」列，其他格子不要改。",
+        "点图片编号可以打开 images/ 里的 512×512 原图；文字类请看原图。",
+        "",
+        "判定规则（只判这一项能力，不评画质和美观）：",
+        "· 数量：prompt 里每个带数量的对象，数量都完全正确才算通过；对象缺失或类别画错也算失败；被遮挡但能数清的算数。",
+        "· 文字：要求的文字全部出现且拼写正确才算通过（不区分大小写，忽略标点）；多出无关的字不扣，但要求的字缺字母或错字母算失败。",
+        "· 空间/属性：prompt 指定的相对位置（及颜色等属性）都成立才算通过；任一指定物体缺失算失败。",
+        "· 拿不准就选「无法判断」，并在备注里写原因。",
+        "",
+        "其他：",
+        "· 图片编号是随机的，不对应方法；同一 prompt 的四张图挨在一起，请逐张独立判断。",
+        "· 「复核」页是别人初判过的图，请独立判断，不要和别人讨论，也不要看别人的表。",
+        "· 完成后把这个 Excel 文件原样发回（文件名不用改）。",
+        "",
+        "示例（格式参考，不是真实数据）：",
+    ]
+    for line in lines:
+        ws.append([line])
+    ws.append(["图片编号", "类别", "Prompt", "判定", "备注"])
+    ws.append(["img1234", "数量", "three red balls on a table", "失败", "只有两个球"])
+    ws.append([])
+    ws.append(["进度", "已填", "总数"])
+    ws.append(["初判", f'=COUNTA(初判!G2:G{n_primary + 1})', n_primary])
+    ws.append(["复核", f'=COUNTA(复核!G2:G{n_recheck + 1})' if n_recheck else 0, n_recheck])
+    for col, w in zip("ABCDE", [12, 10, 34, 10, 20]):
+        ws.column_dimensions[col].width = w
+    for row in ws.iter_rows():
+        for cell in row:
+            cell.font = Font(name=FONT, bold=cell.row == 1)
+
+
+def pack(args):
+    prompts = load_prompts(args.prompts)
+    images = find_images(args.images, prompts)
+    rng = random.Random(args.seed)
+    rows = plan(prompts, rng)
+    out = Path(args.out)
+    if out.exists():
+        shutil.rmtree(out)
+    for row in rows:
+        row["config"], src = images[(row["method"], row["prompt_id"])]
+        for judge in {row["judge"], row["recheck_judge"]} - {""}:
+            folder = out / f"E5判定_{judge}"
+            (folder / "images").mkdir(parents=True, exist_ok=True)
+            (folder / "thumbs").mkdir(exist_ok=True)
+            with Image.open(src) as im:  # re-save: drops PNG text chunks and other metadata
+                clean = im.convert("RGB")
+            clean.save(folder / "images" / f"{row['image_id']}.png", format="PNG")
+            clean.resize((THUMB_PX, THUMB_PX), Image.LANCZOS).save(
+                folder / "thumbs" / f"{row['image_id']}.png", format="PNG")
+    for judge in JUDGES:
+        folder = out / f"E5判定_{judge}"
+        mine = [r for r in rows if r["judge"] == judge]
+        order = list(dict.fromkeys(r["prompt_id"] for r in mine))
+        rng.shuffle(order)
+        primary = []
+        for pid in order:  # a prompt's four images together, in random method order
+            group = [r for r in mine if r["prompt_id"] == pid]
+            rng.shuffle(group)
+            primary += group
+        recheck = [r for r in rows if r["recheck_judge"] == judge]
+        rng.shuffle(recheck)
+        wb = Workbook()
+        write_guide(wb.active, judge, len(primary), len(recheck))
+        wb.active.title = "说明"
+        write_tab(wb.create_sheet("初判"), primary, folder)
+        write_tab(wb.create_sheet("复核"), recheck, folder)
+        wb.calculation.fullCalcOnLoad = True  # the progress counts have no cached values
+        wb.save(folder / f"E5判定表_{judge}.xlsx")
+        shutil.rmtree(folder / "thumbs")  # embedded in the sheet
+        print(f"{judge}: {len(primary)} primary ({len(order)} prompts), {len(recheck)} re-check")
+    (out / "_key").mkdir()
+    fields = ["image_id", "method", "config", "prompt_id", "challenge", "judge", "recheck_judge"]
+    with open(out / "_key" / "key.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
+        w.writeheader()
+        w.writerows(sorted(rows, key=lambda r: r["image_id"]))
+    print(f"{len(rows)} images, {sum(bool(r['recheck_judge']) for r in rows)} re-checked; key in {out / '_key'}")
+
+
+def read_sheets(folder):
+    """{(image_id, tab): (verdict, note)} from every returned sheet."""
+    out = {}
+    for path in sorted(Path(folder).glob("*.xlsx")):
+        wb = load_workbook(path, data_only=True)
+        for tab in ("初判", "复核"):
+            for r in wb[tab].iter_rows(min_row=2, values_only=True):
+                if r[1]:
+                    out[(r[1], tab)] = ((r[6] or "").strip(), (r[7] or "").strip())
+    return out
+
+
+def score(args):
+    key = list(csv.DictReader(open(args.key, encoding="utf-8")))
+    got = read_sheets(args.sheets)
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    missing = [r["image_id"] for r in key if got.get((r["image_id"], "初判"), ("",))[0] not in VERDICTS]
+    missing += [r["image_id"] for r in key if r["recheck_judge"]
+                and got.get((r["image_id"], "复核"), ("",))[0] not in VERDICTS]
+    if missing:
+        print(f"{len(missing)} judgments missing or invalid, e.g. {missing[:5]}")
+    final = {}
+    resolved = Path(args.resolved) if args.resolved else None
+    if resolved and resolved.exists():
+        for r in csv.DictReader(open(resolved, encoding="utf-8-sig")):
+            if r.get("final", "").strip() in VERDICTS:
+                final[r["image_id"]] = r["final"].strip()
+    text = {p["prompt_id"]: p["prompt"] for p in load_prompts()}
+    disagree, agree = [], 0
+    for r in key:
+        if not r["recheck_judge"]:
+            continue
+        (a, note_a), (b, note_b) = (got.get((r["image_id"], tab), ("", "")) for tab in ("初判", "复核"))
+        if a == b:
+            agree += 1
+        else:
+            disagree.append({**r, "prompt": text[r["prompt_id"]], "primary": a, "primary_note": note_a,
+                             "recheck": b, "recheck_note": note_b, "final": final.get(r["image_id"], "")})
+    n_re = agree + len(disagree)
+    print(f"re-check agreement: {agree}/{n_re} ({agree / max(n_re, 1):.0%})")
+    with open(out / "disagreements.csv", "w", newline="", encoding="utf-8-sig") as f:  # BOM: opens in Excel
+        fields = ["image_id", "prompt_id", "challenge", "prompt", "judge", "primary", "primary_note",
+                  "recheck_judge", "recheck", "recheck_note", "final"]
+        w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
+        w.writeheader()
+        w.writerows(disagree)
+    counts = defaultdict(Counter)
+    for r in key:
+        verdict = final.get(r["image_id"]) or got.get((r["image_id"], "初判"), ("", ""))[0]
+        for challenge in (r["challenge"], "all"):
+            counts[(r["method"], challenge)][verdict] += 1
+    with open(out / "e5_failure.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(["method", "config", "challenge", "n", "fail", "pass", "unsure", "fail_rate"])
+        configs = {r["method"]: r["config"] for r in key}
+        for method in METHODS:
+            for challenge in list(CHALLENGES) + ["all"]:
+                c = counts[(method, challenge)]
+                judged = c["失败"] + c["通过"]
+                w.writerow([METHODS[method], configs[method], challenge, sum(c.values()), c["失败"],
+                            c["通过"], c["无法判断"], f"{c['失败'] / judged:.3f}" if judged else ""])
+    print(f"written: {out / 'disagreements.csv'}, {out / 'e5_failure.csv'}")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    p = sub.add_parser("pack")
+    p.add_argument("--images", default="outputs/e5/parti")
+    p.add_argument("--prompts", default=str(PROMPTS))
+    p.add_argument("--out", default="e5_judging")
+    p.add_argument("--seed", type=int, default=SEED)
+    s = sub.add_parser("score")
+    s.add_argument("--key", required=True)
+    s.add_argument("--sheets", required=True, help="folder with the returned .xlsx sheets")
+    s.add_argument("--resolved", help="disagreements.csv with the final column filled in")
+    s.add_argument("--out", default="e5_results")
+    args = ap.parse_args()
+    pack(args) if args.cmd == "pack" else score(args)
+
+
+if __name__ == "__main__":
+    main()

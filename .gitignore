@@ -34,3 +34,7 @@ Thumbs.db
 
 # Job logs
 logs/
+
+# E5 judging packages and returned sheets (contain the unblinding key)
+/e5_judging/
+/e5_results/
