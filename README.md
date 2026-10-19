@@ -65,6 +65,10 @@ python -m src.select_configs --config configs/e2/sdxl_base.yaml
 
 **修改配置后重跑**：生成和打分前会检查输出目录里的 `config.yaml`，设置不一致就拒绝运行。例如模型版本固定、基线改用 trailing 之后，旧的 `outputs/smoke` 必须先移走（如移到 `outputs/_discarded/`）才能重跑冒烟测试。配置字段见 [configs/README.md](configs/README.md)。
 
+## E5 人工判定
+
+打包、回收评分和分歧讨论的命令见 [E5 judging guide](docs/e5_judging.md)。新版输出英文判定表，评分兼容已经发出的中文表；默认结果保存在 `outputs/` 下。
+
 ## 协作流程
 
 1. 不直接向 `main` 推送；每人在自己的分支开发，分支名用 `<角色>/<内容>`，例如 `a/eval-pipeline`、`b/lcm-sweep`。
