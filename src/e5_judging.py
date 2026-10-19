@@ -7,7 +7,7 @@ pack: every E5 image (4 methods x 87 frozen prompts) gets a random image id. Pro
 dealt to the four judges per challenge, so each judge sees all four images of their
 prompts and a similar mix of challenges. 20% of the images, sampled per method and
 challenge, also go to a second judge (the next one in JUDGES) for an independent check.
-Each judge gets a folder with the images (re-saved without metadata) and a sheet with
+Each judge gets a folder with the images (all at 512 px, re-saved without metadata) and a sheet with
 two tabs, primary and re-check. Method names appear only in _key/key.csv.
 
 score: reads the returned sheets, writes the re-check disagreements for discussion and
@@ -44,6 +44,7 @@ CHALLENGES = {  # challenge -> (label, what passes)
     "position": ("空间/属性", "prompt 指定的相对位置和属性都成立"),
 }
 VERDICTS = ["通过", "失败", "无法判断"]
+JUDGE_PX = 512  # every image is shown at this size: Turbo is native 512, the E5 configs save the rest at 1024
 THUMB_PX = 256
 FONT = "Arial"
 INPUT_FILL = PatternFill("solid", start_color="FFF2CC")
@@ -169,6 +170,8 @@ def pack(args):
             (folder / "thumbs").mkdir(exist_ok=True)
             with Image.open(src) as im:  # re-save: drops PNG text chunks and other metadata
                 clean = im.convert("RGB")
+            if clean.size != (JUDGE_PX, JUDGE_PX):  # a size difference would give the method away
+                clean = clean.resize((JUDGE_PX, JUDGE_PX), Image.BICUBIC)
             clean.save(folder / "images" / f"{row['image_id']}.png", format="PNG")
             clean.resize((THUMB_PX, THUMB_PX), Image.LANCZOS).save(
                 folder / "thumbs" / f"{row['image_id']}.png", format="PNG")
