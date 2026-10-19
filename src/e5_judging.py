@@ -1,7 +1,7 @@
 """E5 human judging: blind packages for the judges, then failure rates from their sheets.
 
-    python -m src.e5_judging pack  --images outputs/e5/parti --out e5_judging
-    python -m src.e5_judging score --key e5_judging/_key/key.csv --sheets returned/ --out e5_results
+    python -m src.e5_judging pack  --images outputs/e5/parti --out outputs/e5_judging
+    python -m src.e5_judging score --key outputs/e5_judging/_key/key.csv --sheets returned/ --out outputs/e5_results
 
 pack: every E5 image (4 methods x 87 frozen prompts) gets a random image id. Prompts are
 dealt to the four judges per challenge, so each judge sees all four images of their
@@ -41,20 +41,27 @@ SEED = 2026
 METHODS = {"sdxl_base": "SDXL + DPM-Solver++", "lcm_lora": "LCM-LoRA",
            "sdxl_turbo": "SDXL-Turbo", "sdxl_lightning": "SDXL-Lightning"}
 CHALLENGES = {  # challenge -> (label, what passes)
-    "quantity": ("数量", "prompt 里每个带数量的对象，数量都完全正确"),
-    "writing": ("文字", "要求的文字全部出现且拼写正确（不区分大小写，忽略标点）"),
-    "position": ("空间/属性", "prompt 指定的相对位置和属性都成立"),
+    "quantity": ("Quantity", "Every explicitly counted object has the exact requested count"),
+    "writing": ("Writing", "All requested text is present and spelled correctly (ignore case and punctuation)"),
+    "position": ("Position / properties", "All requested relative positions and properties are correct"),
 }
-VERDICTS = ["通过", "失败", "无法判断"]
+VERDICTS = ["pass", "fail", "unsure"]
 JUDGE_PX = 512  # every image is shown at this size: Turbo is native 512, the E5 configs save the rest at 1024
 THUMB_PX = 256
 FONT = "Arial"
 INPUT_FILL = PatternFill("solid", start_color="FFF2CC")
-HEADER = ["序号", "图片编号", "图片", "类别", "Prompt", "通过标准", "判定", "备注"]
+HEADER = ["No.", "Image ID", "Image", "Challenge", "Prompt", "Pass criterion", "Verdict", "Notes"]
 
 
 def load_prompts(path=PROMPTS):
-    return [json.loads(line) for line in open(path, encoding="utf-8") if line.strip()]
+    with open(path, encoding="utf-8") as f:
+        rows = [json.loads(line) for line in f if line.strip()]
+    ids = [r["prompt_id"] for r in rows]
+    if not rows or len(ids) != len(set(ids)):
+        raise ValueError("prompts must be non-empty with unique prompt IDs")
+    if any(r["challenge"] not in CHALLENGES for r in rows):
+        raise ValueError("unknown prompt challenge")
+    return rows
 
 
 def find_images(root, prompts):
@@ -62,10 +69,12 @@ def find_images(root, prompts):
     found = {}
     for method in METHODS:
         configs = [d for d in (Path(root) / method).iterdir() if d.is_dir()]
-        assert len(configs) == 1, f"{method}: expected one config folder, found {configs}"
+        if len(configs) != 1:
+            raise ValueError(f"{method}: expected one config folder, found {configs}")
         for p in prompts:
             path = configs[0] / f"{p['prompt_id']}_0.png"
-            assert path.exists(), f"missing {path}"
+            if not path.is_file():
+                raise FileNotFoundError(f"missing {path}")
             found[(method, p["prompt_id"])] = (configs[0].name, path)
     return found
 
@@ -97,7 +106,7 @@ def write_tab(ws, rows, folder):
     ws.append(HEADER)
     for cell in ws[1]:
         cell.font = Font(name=FONT, bold=True)
-    widths = [6, 11, 37, 9, 40, 30, 11, 30]
+    widths = [6, 11, 37, 22, 40, 30, 11, 30]
     for col, w in zip("ABCDEFGH", widths):
         ws.column_dimensions[col].width = w
     dv = DataValidation(type="list", formula1='"' + ",".join(VERDICTS) + '"', allow_blank=True)
@@ -123,51 +132,54 @@ def write_tab(ws, rows, folder):
 
 def write_guide(ws, judge, n_primary, n_recheck):
     lines = [
-        f"E5 人工判定 — 判定人 {judge}",
+        f"E5 human judging — Judge {judge}",
         "",
-        "要填的格子：「初判」和「复核」两页里黄色的「判定」（下拉选择）和「备注」列，其他格子不要改。",
-        "点图片编号可以打开 images/ 里的 512×512 原图；文字类请看原图。",
+        "Fill only the yellow Verdict (dropdown) and Notes cells in Primary and Recheck.",
+        "Click an image ID to open the 512 x 512 judging image in images/. Use it for text judgments.",
         "",
-        "判定规则（只判这一项能力，不评画质和美观）：",
-        "· 数量：prompt 里每个带数量的对象，数量都完全正确才算通过；对象缺失或类别画错也算失败；被遮挡但能数清的算数。",
-        "· 文字：要求的文字全部出现且拼写正确才算通过（不区分大小写，忽略标点）；多出无关的字不扣，但要求的字缺字母或错字母算失败。",
-        "· 空间/属性：prompt 指定的相对位置（及颜色等属性）都成立才算通过；任一指定物体缺失算失败。",
-        "· 拿不准就选「无法判断」，并在备注里写原因。",
+        "Judge only the specified capability, not image quality or aesthetics:",
+        "Quantity: every explicitly counted object must have exactly the requested count. Missing or wrong objects fail; count occluded objects if distinguishable.",
+        "Writing: all requested text must be present and spelled correctly (ignore case and punctuation). Extra unrelated text is allowed; missing or incorrect letters fail.",
+        "Position / properties: all requested relative positions and properties (such as colors) must hold. Any missing requested object fails.",
+        "Choose unsure when you cannot decide, and explain why in Notes.",
         "",
-        "其他：",
-        "· 图片编号是随机的，不对应方法；同一 prompt 的四张图挨在一起，请逐张独立判断。",
-        "· 「复核」页是别人初判过的图，请独立判断，不要和别人讨论，也不要看别人的表。",
-        "· 完成后把这个 Excel 文件原样发回（文件名不用改）。",
+        "Image IDs are random and do not identify methods. Judge each of the four images for a prompt independently.",
+        "Recheck contains another judge's images. Judge independently without discussion or consulting their sheet.",
+        "Return this Excel file with its filename unchanged.",
         "",
-        "示例（格式参考，不是真实数据）：",
+        "Example (format only, not real data):",
     ]
     for line in lines:
         ws.append([line])
-    ws.append(["图片编号", "类别", "Prompt", "判定", "备注"])
-    ws.append(["img1234", "数量", "three red balls on a table", "失败", "只有两个球"])
+        ws.merge_cells(start_row=ws.max_row, start_column=1, end_row=ws.max_row, end_column=5)
+        ws.row_dimensions[ws.max_row].height = 45 if len(line) > 100 else 30
+    ws.append(["Image ID", "Challenge", "Prompt", "Verdict", "Notes"])
+    ws.append(["img1234", "Quantity", "three red balls on a table", "fail", "Only two balls"])
     ws.append([])
-    ws.append(["进度", "已填", "总数"])
-    ws.append(["初判", f'=COUNTA(初判!G2:G{n_primary + 1})', n_primary])
-    ws.append(["复核", f'=COUNTA(复核!G2:G{n_recheck + 1})' if n_recheck else 0, n_recheck])
-    for col, w in zip("ABCDE", [12, 10, 34, 10, 20]):
-        ws.column_dimensions[col].width = w
+    ws.append(["Progress", "Filled", "Total"])
+    for tab, count in (("Primary", n_primary), ("Recheck", n_recheck)):
+        ws.append([tab, f"=COUNTA('{tab}'!G2:G{count + 1})" if count else 0, count])
+    for col, width in zip("ABCDE", [15, 15, 40, 15, 30]):
+        ws.column_dimensions[col].width = width
     for row in ws.iter_rows():
         for cell in row:
             cell.font = Font(name=FONT, bold=cell.row == 1)
+            cell.alignment = Alignment(vertical="center", wrap_text=True)
 
 
 def pack(args):
+    out = Path(args.out)
+    if out.exists() or out.is_symlink():
+        raise FileExistsError(f"{out} already exists; choose a new output directory")
     prompts = load_prompts(args.prompts)
     images = find_images(args.images, prompts)
     rng = random.Random(args.seed)
     rows = plan(prompts, rng)
-    out = Path(args.out)
-    if out.exists():
-        shutil.rmtree(out)
+    out.mkdir(parents=True, exist_ok=False)
     for row in rows:
         row["config"], src = images[(row["method"], row["prompt_id"])]
         for judge in {row["judge"], row["recheck_judge"]} - {""}:
-            folder = out / f"E5判定_{judge}"
+            folder = out / f"E5_judge_{judge}"
             (folder / "images").mkdir(parents=True, exist_ok=True)
             (folder / "thumbs").mkdir(exist_ok=True)
             with Image.open(src) as im:  # re-save: drops PNG text chunks and other metadata
@@ -178,7 +190,8 @@ def pack(args):
             clean.resize((THUMB_PX, THUMB_PX), Image.LANCZOS).save(
                 folder / "thumbs" / f"{row['image_id']}.png", format="PNG")
     for judge in JUDGES:
-        folder = out / f"E5判定_{judge}"
+        folder = out / f"E5_judge_{judge}"
+        folder.mkdir(parents=True, exist_ok=True)
         mine = [r for r in rows if r["judge"] == judge]
         order = list(dict.fromkeys(r["prompt_id"] for r in mine))
         rng.shuffle(order)
@@ -191,12 +204,13 @@ def pack(args):
         rng.shuffle(recheck)
         wb = Workbook()
         write_guide(wb.active, judge, len(primary), len(recheck))
-        wb.active.title = "说明"
-        write_tab(wb.create_sheet("初判"), primary, folder)
-        write_tab(wb.create_sheet("复核"), recheck, folder)
+        wb.active.title = "Guide"
+        write_tab(wb.create_sheet("Primary"), primary, folder)
+        write_tab(wb.create_sheet("Recheck"), recheck, folder)
         wb.calculation.fullCalcOnLoad = True  # the progress counts have no cached values
-        wb.save(folder / f"E5判定表_{judge}.xlsx")
-        shutil.rmtree(folder / "thumbs")  # embedded in the sheet
+        wb.save(folder / f"E5_judging_{judge}.xlsx")
+        if (folder / "thumbs").exists():
+            shutil.rmtree(folder / "thumbs")  # embedded in the sheet
         print(f"{judge}: {len(primary)} primary ({len(order)} prompts), {len(recheck)} re-check")
     (out / "_key").mkdir()
     fields = ["image_id", "method", "config", "prompt_id", "challenge", "judge", "recheck_judge"]
@@ -207,15 +221,52 @@ def pack(args):
     print(f"{len(rows)} images, {sum(bool(r['recheck_judge']) for r in rows)} re-checked; key in {out / '_key'}")
 
 
+# Input aliases keep already-distributed Chinese workbooks usable.
+TAB_ALIASES = {"Primary": ("Primary", "初判"), "Recheck": ("Recheck", "复核")}
+VERDICT_ALIASES = {"pass": "pass", "fail": "fail", "unsure": "unsure",
+                   "通过": "pass", "失败": "fail", "无法判断": "unsure"}
+
+
+def normalize_verdict(value):
+    text = str(value).strip().lower() if value is not None else ""
+    if not text:
+        return ""
+    if text not in VERDICT_ALIASES:
+        raise ValueError(f"invalid verdict {value!r}; expected pass, fail or unsure")
+    return VERDICT_ALIASES[text]
+
+
 def read_sheets(folder):
-    """{(image_id, tab): (verdict, note)} from every returned sheet."""
+    """Read English or legacy Chinese sheets; never silently overwrite a judgment."""
+    folder = Path(folder)
+    if not folder.is_dir():
+        raise NotADirectoryError(folder)
     out = {}
-    for path in sorted(Path(folder).glob("*.xlsx")):
-        wb = load_workbook(path, data_only=True)
-        for tab in ("初判", "复核"):
-            for r in wb[tab].iter_rows(min_row=2, values_only=True):
-                if r[1]:
-                    out[(r[1], tab)] = ((r[6] or "").strip(), (r[7] or "").strip())
+    for path in sorted(folder.glob("*.xlsx")):
+        if path.name.startswith("~$"):
+            continue  # Excel lock file
+        wb = load_workbook(path, data_only=True, read_only=True)
+        try:
+            for tab, aliases in TAB_ALIASES.items():
+                matches = [name for name in aliases if name in wb.sheetnames]
+                if len(matches) != 1:
+                    raise ValueError(f"{path}: expected exactly one {tab} tab")
+                for number, row in enumerate(wb[matches[0]].iter_rows(min_row=2, max_col=8, values_only=True), 2):
+                    if not any(value is not None for value in row):
+                        continue
+                    if not row[1]:
+                        raise ValueError(f"{path}:{tab}:{number}: missing image ID")
+                    image_id = str(row[1]).strip()
+                    key = (image_id, tab)
+                    if key in out:
+                        raise ValueError(f"{path}: duplicate judgment for {image_id} / {tab}")
+                    try:
+                        verdict = normalize_verdict(row[6])
+                    except ValueError as exc:
+                        raise ValueError(f"{path}:{tab}:{number}: {exc}") from exc
+                    out[key] = (verdict, str(row[7]).strip() if row[7] is not None else "")
+        finally:
+            wb.close()
     return out
 
 
@@ -237,51 +288,106 @@ def cohen_kappa(pairs):
     observed = sum(a == b for a, b in pairs) / n
     first, second = Counter(a for a, _ in pairs), Counter(b for _, b in pairs)
     expected = sum(first[v] * second[v] for v in set(first) | set(second)) / (n * n)
-    return (observed - expected) / (1 - expected) if expected < 1 else 1.0
+    return (observed - expected) / (1 - expected) if expected < 1 else None
 
 
 def per_challenge_metrics(root, key):
     """Mean CLIP Score and ImageReward per method and challenge, from the scorer's
     per_image_scores.jsonl in each E5 output folder."""
-    challenge = {r["prompt_id"]: r["challenge"] for r in key}
     sums = defaultdict(lambda: defaultdict(list))
     for method in METHODS:
-        for path in Path(root, method).glob("*/per_image_scores.jsonl"):
-            for line in open(path, encoding="utf-8"):
+        selected = [r for r in key if r["method"] == method]
+        challenge = {r["prompt_id"]: r["challenge"] for r in selected}
+        path = Path(root, method, selected[0]["config"], "per_image_scores.jsonl")
+        seen = set()
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
                 r = json.loads(line)
+                pid = r["prompt_id"]
+                if pid not in challenge or pid in seen or r.get("seed") != 0:
+                    raise ValueError(f"{path}: unexpected or duplicate image: {pid}")
+                seen.add(pid)
                 for ch in (challenge[r["prompt_id"]], "all"):
                     for metric in ("clip_score", "image_reward"):
-                        sums[(method, ch)][metric].append(r[metric])
+                        value = r.get(metric)
+                        if not isinstance(value, (int, float)) or not math.isfinite(value):
+                            raise ValueError(f"{path}: missing or invalid {metric} for {pid}")
+                        sums[(method, ch)][metric].append(value)
+        if seen != set(challenge):
+            raise ValueError(f"{path}: missing scores for {sorted(set(challenge) - seen)}")
     return {k: {m: sum(v) / len(v) for m, v in d.items()} for k, d in sums.items()}
 
 
 def score(args):
-    key = list(csv.DictReader(open(args.key, encoding="utf-8")))
+    with open(args.key, encoding="utf-8-sig") as f:
+        key = list(csv.DictReader(f))
+    prompts = load_prompts(args.prompts)
+    prompt_map = {p["prompt_id"]: p for p in prompts}
+    expected = {(m, p["prompt_id"]) for m in METHODS for p in prompts}
+    actual = {(r["method"], r["prompt_id"]) for r in key}
+    if actual != expected or len(key) != len(expected):
+        raise ValueError("key must contain exactly one image per method and prompt")
+    if len({r["image_id"] for r in key}) != len(key):
+        raise ValueError("key contains duplicate image IDs")
+    for r in key:
+        if (r["challenge"] != prompt_map[r["prompt_id"]]["challenge"]
+                or r["judge"] not in JUDGES
+                or r["recheck_judge"] not in ["", *JUDGES]
+                or r["recheck_judge"] == r["judge"]):
+            raise ValueError(f"invalid key assignment for {r['image_id']}")
+    if any(len({r["config"] for r in key if r["method"] == m}) != 1 for m in METHODS):
+        raise ValueError("key must contain exactly one configuration per method")
     got = read_sheets(args.sheets)
+    expected_slots = {(r["image_id"], "Primary") for r in key}
+    expected_slots |= {(r["image_id"], "Recheck") for r in key if r["recheck_judge"]}
+    if set(got) - expected_slots:
+        raise ValueError(f"unexpected image IDs or tabs: {sorted(set(got) - expected_slots)[:5]}")
     out = Path(args.out)
-    out.mkdir(parents=True, exist_ok=True)
-    missing = [r["image_id"] for r in key if got.get((r["image_id"], "初判"), ("",))[0] not in VERDICTS]
+    missing = [r["image_id"] for r in key if got.get((r["image_id"], "Primary"), ("",))[0] not in VERDICTS]
     missing += [r["image_id"] for r in key if r["recheck_judge"]
-                and got.get((r["image_id"], "复核"), ("",))[0] not in VERDICTS]
+                and got.get((r["image_id"], "Recheck"), ("",))[0] not in VERDICTS]
     final = {}
     resolved = Path(args.resolved) if args.resolved else None
-    if resolved and resolved.exists():
-        for r in csv.DictReader(open(resolved, encoding="utf-8-sig")):
-            if r.get("final", "").strip() in VERDICTS:
-                final[r["image_id"]] = r["final"].strip()
-    text = {p["prompt_id"]: p["prompt"] for p in load_prompts()}
+    previous = out / "disagreements.csv"
+    if resolved is None and previous.exists():
+        with open(previous, encoding="utf-8-sig") as f:
+            if any(r.get("final", "").strip() for r in csv.DictReader(f)):
+                raise ValueError(f"{previous} contains final decisions; supply it with --resolved")
+    if resolved:
+        with open(resolved, encoding="utf-8-sig") as f:
+            seen = set()
+            for r in csv.DictReader(f):
+                value = normalize_verdict(r.get("final"))
+                if not value:
+                    continue
+                image_id = r["image_id"]
+                if image_id in seen:
+                    raise ValueError(f"duplicate final decision for {image_id}")
+                seen.add(image_id)
+                a, b = (got.get((image_id, tab), ("", ""))[0] for tab in TAB_ALIASES)
+                if not a or not b or a == b:
+                    raise ValueError(f"{image_id}: final decision requires a completed disagreement")
+                if (normalize_verdict(r.get("primary")) != a
+                        or normalize_verdict(r.get("recheck")) != b):
+                    raise ValueError(f"{image_id}: final decision refers to outdated judgments")
+                final[image_id] = value
+    text = {p["prompt_id"]: p["prompt"] for p in prompts}
+    auto = per_challenge_metrics(args.images, key) if args.images else {}
 
     # Re-check: agreement before the discussion, and the list to discuss.
     disagree, pairs = [], []
     for r in key:
         if not r["recheck_judge"]:
             continue
-        (a, note_a), (b, note_b) = (got.get((r["image_id"], tab), ("", "")) for tab in ("初判", "复核"))
+        (a, note_a), (b, note_b) = (got.get((r["image_id"], tab), ("", "")) for tab in ("Primary", "Recheck"))
         if a in VERDICTS and b in VERDICTS:
             pairs.append((a, b))
-        if a != b:
+        if a in VERDICTS and b in VERDICTS and a != b:
             disagree.append({**r, "prompt": text[r["prompt_id"]], "primary": a, "primary_note": note_a,
                              "recheck": b, "recheck_note": note_b, "final": final.get(r["image_id"], "")})
+    out.mkdir(parents=True, exist_ok=True)
     with open(out / "disagreements.csv", "w", newline="", encoding="utf-8-sig") as f:  # BOM: opens in Excel
         fields = ["image_id", "prompt_id", "challenge", "prompt", "judge", "primary", "primary_note",
                   "recheck_judge", "recheck", "recheck_note", "final"]
@@ -293,24 +399,25 @@ def score(args):
     kappa = cohen_kappa(pairs)
 
     # Final verdict: the discussed one where there was a disagreement, else the primary one.
-    verdict = {r["image_id"]: final.get(r["image_id"]) or got.get((r["image_id"], "初判"), ("", ""))[0]
+    verdict = {r["image_id"]: final.get(r["image_id"]) or got.get((r["image_id"], "Primary"), ("", ""))[0]
                for r in key}
     counts = defaultdict(Counter)
     for r in key:
         for challenge in (r["challenge"], "all"):
             counts[(r["method"], challenge)][verdict[r["image_id"]]] += 1
-    auto = per_challenge_metrics(args.images, key) if args.images else {}
+    status = "final" if not missing and not unresolved else "PROVISIONAL"
     configs = {r["method"]: r["config"] for r in key}
     rows = []
     for method in METHODS:
         for challenge in list(CHALLENGES) + ["all"]:
             c = counts[(method, challenge)]
-            judged = c["失败"] + c["通过"]
-            lo, hi = wilson(c["失败"], judged)
+            judged = c["fail"] + c["pass"]
+            lo, hi = wilson(c["fail"], judged)
             a = auto.get((method, challenge), {})
-            rows.append({"method": METHODS[method], "config": configs[method], "challenge": challenge,
-                         "n": sum(c.values()), "fail": c["失败"], "pass": c["通过"], "unsure": c["无法判断"],
-                         "fail_rate": f"{c['失败'] / judged:.3f}" if judged else "",
+            rows.append({"status": status, "method": METHODS[method], "config": configs[method], "challenge": challenge,
+                         "n": sum(c.values()), "fail": c["fail"], "pass": c["pass"], "unsure": c["unsure"],
+                         "missing": c[""],
+                         "fail_rate": f"{c['fail'] / judged:.3f}" if judged else "",
                          "ci95_low": f"{lo:.3f}" if judged else "", "ci95_high": f"{hi:.3f}" if judged else "",
                          "clip_score": f"{a['clip_score']:.2f}" if a else "",
                          "image_reward": f"{a['image_reward']:.3f}" if a else ""})
@@ -319,25 +426,28 @@ def score(args):
         w.writeheader()
         w.writerows(rows)
 
-    status = "final" if not missing and not unresolved else "PROVISIONAL"
+    kappa_text = f"{kappa:.2f}" if kappa is not None else "undefined"
     summary = [
         f"status: {status}",
         f"judgments missing or invalid: {len(missing)}" + (f" (e.g. {missing[:5]})" if missing else ""),
         f"re-check pairs: {len(pairs)}; agreement {agree}/{len(pairs)}"
-        + (f" ({agree / len(pairs):.1%}), Cohen's kappa {kappa:.2f}" if pairs else ""),
+        + (f" ({agree / len(pairs):.1%}), Cohen's kappa {kappa_text}" if pairs else ""),
         f"disagreements: {len(disagree)}, unresolved: {len(unresolved)}",
         "fail_rate = fail / (fail + pass); unsure images are excluded and counted separately;"
         " ci95 is the Wilson score interval",
     ]
     (out / "e5_summary.txt").write_text("\n".join(summary) + "\n", encoding="utf-8")
     print("\n".join(summary))
-    plot_failure(rows, out)
+    plot_failure(rows, out, status)
     if args.packages:
-        plot_cases(key, verdict, text, Path(args.packages), out, random.Random(args.seed))
+        plot_cases(key, verdict, text, Path(args.packages), out, random.Random(args.seed), status=status)
+    else:
+        for ext in ("png", "pdf"):
+            (out / f"e5_failure_cases.{ext}").unlink(missing_ok=True)
     print(f"written to {out}")
 
 
-def plot_failure(rows, out):
+def plot_failure(rows, out, status="PROVISIONAL"):
     """Failure rate with its 95% interval, one panel per challenge."""
     import matplotlib
     matplotlib.use("Agg")
@@ -369,20 +479,21 @@ def plot_failure(rows, out):
         for side in ("top", "right"):
             ax.spines[side].set_visible(False)
     axes[0].set_ylabel("Human-judged failure rate")
-    fig.suptitle("E5: failure rate on the selected PartiPrompts subset (bars: 95% Wilson interval)",
+    fig.suptitle(f"{status} — E5: failure rate on the selected PartiPrompts subset (bars: 95% Wilson interval)",
                  x=0.01, ha="left", fontsize=11)
     for ext in ("png", "pdf"):
         fig.savefig(out / f"e5_failure_rate.{ext}", dpi=200, facecolor="white")
     plt.close(fig)
 
 
-def plot_cases(key, verdict, text, packages, out, rng, per_challenge=2):
+def plot_cases(key, verdict, text, packages, out, rng, per_challenge=2, status="PROVISIONAL"):
     """Selected examples: prompts where the methods disagree, all four images side by side.
     The prompts are drawn at random (fixed seed) from those with mixed outcomes."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    paths = {p.stem: p for p in packages.glob("E5判定_*/images/*.png")}
+    paths = {p.stem: p for pattern in ("E5_judge_*/images/*.png", "E5判定_*/images/*.png")
+             for p in packages.glob(pattern)}
     by_prompt = defaultdict(dict)
     for r in key:
         by_prompt[r["prompt_id"]][r["method"]] = r
@@ -390,13 +501,15 @@ def plot_cases(key, verdict, text, packages, out, rng, per_challenge=2):
     for ch in CHALLENGES:
         mixed = sorted(pid for pid, ms in by_prompt.items()
                        if ms[next(iter(ms))]["challenge"] == ch
-                       and {verdict[m["image_id"]] for m in ms.values()} >= {"通过", "失败"})
+                       and {verdict[m["image_id"]] for m in ms.values()} >= {"pass", "fail"})
         chosen += rng.sample(mixed, min(per_challenge, len(mixed)))
     if not chosen:
+        for ext in ("png", "pdf"):
+            (out / f"e5_failure_cases.{ext}").unlink(missing_ok=True)
         return
     fig = plt.figure(figsize=(10, 3.1 * len(chosen)), layout="constrained")
-    label = {"通过": "pass", "失败": "FAIL", "无法判断": "unsure", "": "not judged"}
-    for sub, pid in zip(fig.subfigures(len(chosen), 1), chosen):
+    label = {"pass": "pass", "fail": "FAIL", "unsure": "unsure", "": "not judged"}
+    for sub, pid in zip(fig.subfigures(len(chosen), 1, squeeze=False).flat, chosen):
         rows = by_prompt[pid]
         prompt = text[pid] if len(text[pid]) < 110 else text[pid][:107] + "..."
         sub.suptitle(f"[{rows[next(iter(rows))]['challenge'].capitalize()}] {prompt}",
@@ -407,10 +520,10 @@ def plot_cases(key, verdict, text, packages, out, rng, per_challenge=2):
                 ax.imshow(im)
             v = verdict[r["image_id"]]
             ax.set_title(f"{METHODS[method]}: {label[v]}", fontsize=9,
-                         color="#c4372c" if v == "失败" else "#0b0b0b")
+                         color="#c4372c" if v == "fail" else "#0b0b0b")
             ax.set_xticks([])
             ax.set_yticks([])
-    fig.suptitle("E5: selected examples (prompts drawn at random among those where the methods "
+    fig.suptitle(f"{status} — E5: selected examples (prompts drawn at random among those where the methods "
                  "disagree)", x=0.01, ha="left", fontsize=11)
     for ext in ("png", "pdf"):
         fig.savefig(out / f"e5_failure_cases.{ext}", dpi=150, facecolor="white")
@@ -423,13 +536,14 @@ def main():
     p = sub.add_parser("pack")
     p.add_argument("--images", default="outputs/e5/parti")
     p.add_argument("--prompts", default=str(PROMPTS))
-    p.add_argument("--out", default="e5_judging")
+    p.add_argument("--out", default="outputs/e5_judging")
     p.add_argument("--seed", type=int, default=SEED)
     s = sub.add_parser("score")
+    s.add_argument("--prompts", default=str(PROMPTS))
     s.add_argument("--key", required=True)
     s.add_argument("--sheets", required=True, help="folder with the returned .xlsx sheets")
     s.add_argument("--resolved", help="disagreements.csv with the final column filled in")
-    s.add_argument("--out", default="e5_results")
+    s.add_argument("--out", default="outputs/e5_results")
     s.add_argument("--images", help="E5 output root with per_image_scores.jsonl (auto metrics by challenge)")
     s.add_argument("--packages", help="the judging packages folder, to draw the failure examples")
     s.add_argument("--seed", type=int, default=SEED)
