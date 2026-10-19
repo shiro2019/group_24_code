@@ -10,9 +10,11 @@ challenge, also go to a second judge (the next one in JUDGES) for an independent
 Each judge gets a folder with the images (all at 512 px, re-saved without metadata) and a sheet with
 two tabs, primary and re-check. Method names appear only in _key/key.csv.
 
-score: reads the returned sheets, writes the re-check disagreements for discussion and
-the failure rate per method and challenge. A filled-in "final" column in the
-disagreements file overrides the primary judgment after the discussion.
+score: reads the returned sheets and writes the re-check disagreements for discussion,
+the failure rate per method and challenge with a 95% Wilson interval, re-check
+agreement and Cohen's kappa, and the figures. A filled-in "final" column in the
+disagreements file overrides the primary judgment after the discussion; until every
+judgment is in and every disagreement is resolved the results are marked PROVISIONAL.
 """
 
 import argparse
@@ -217,6 +219,42 @@ def read_sheets(folder):
     return out
 
 
+def wilson(k, n, z=1.96):
+    """95% Wilson score interval for k failures out of n judged images."""
+    if not n:
+        return None, None
+    p = k / n
+    centre = (p + z * z / (2 * n)) / (1 + z * z / n)
+    half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / (1 + z * z / n)
+    return max(0.0, centre - half), min(1.0, centre + half)
+
+
+def cohen_kappa(pairs):
+    """Agreement between primary and re-check verdicts beyond chance."""
+    n = len(pairs)
+    if not n:
+        return None
+    observed = sum(a == b for a, b in pairs) / n
+    first, second = Counter(a for a, _ in pairs), Counter(b for _, b in pairs)
+    expected = sum(first[v] * second[v] for v in set(first) | set(second)) / (n * n)
+    return (observed - expected) / (1 - expected) if expected < 1 else 1.0
+
+
+def per_challenge_metrics(root, key):
+    """Mean CLIP Score and ImageReward per method and challenge, from the scorer's
+    per_image_scores.jsonl in each E5 output folder."""
+    challenge = {r["prompt_id"]: r["challenge"] for r in key}
+    sums = defaultdict(lambda: defaultdict(list))
+    for method in METHODS:
+        for path in Path(root, method).glob("*/per_image_scores.jsonl"):
+            for line in open(path, encoding="utf-8"):
+                r = json.loads(line)
+                for ch in (challenge[r["prompt_id"]], "all"):
+                    for metric in ("clip_score", "image_reward"):
+                        sums[(method, ch)][metric].append(r[metric])
+    return {k: {m: sum(v) / len(v) for m, v in d.items()} for k, d in sums.items()}
+
+
 def score(args):
     key = list(csv.DictReader(open(args.key, encoding="utf-8")))
     got = read_sheets(args.sheets)
@@ -225,8 +263,6 @@ def score(args):
     missing = [r["image_id"] for r in key if got.get((r["image_id"], "初判"), ("",))[0] not in VERDICTS]
     missing += [r["image_id"] for r in key if r["recheck_judge"]
                 and got.get((r["image_id"], "复核"), ("",))[0] not in VERDICTS]
-    if missing:
-        print(f"{len(missing)} judgments missing or invalid, e.g. {missing[:5]}")
     final = {}
     resolved = Path(args.resolved) if args.resolved else None
     if resolved and resolved.exists():
@@ -234,40 +270,151 @@ def score(args):
             if r.get("final", "").strip() in VERDICTS:
                 final[r["image_id"]] = r["final"].strip()
     text = {p["prompt_id"]: p["prompt"] for p in load_prompts()}
-    disagree, agree = [], 0
+
+    # Re-check: agreement before the discussion, and the list to discuss.
+    disagree, pairs = [], []
     for r in key:
         if not r["recheck_judge"]:
             continue
         (a, note_a), (b, note_b) = (got.get((r["image_id"], tab), ("", "")) for tab in ("初判", "复核"))
-        if a == b:
-            agree += 1
-        else:
+        if a in VERDICTS and b in VERDICTS:
+            pairs.append((a, b))
+        if a != b:
             disagree.append({**r, "prompt": text[r["prompt_id"]], "primary": a, "primary_note": note_a,
                              "recheck": b, "recheck_note": note_b, "final": final.get(r["image_id"], "")})
-    n_re = agree + len(disagree)
-    print(f"re-check agreement: {agree}/{n_re} ({agree / max(n_re, 1):.0%})")
     with open(out / "disagreements.csv", "w", newline="", encoding="utf-8-sig") as f:  # BOM: opens in Excel
         fields = ["image_id", "prompt_id", "challenge", "prompt", "judge", "primary", "primary_note",
                   "recheck_judge", "recheck", "recheck_note", "final"]
         w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
         w.writeheader()
         w.writerows(disagree)
+    unresolved = [d["image_id"] for d in disagree if not d["final"]]
+    agree = sum(a == b for a, b in pairs)
+    kappa = cohen_kappa(pairs)
+
+    # Final verdict: the discussed one where there was a disagreement, else the primary one.
+    verdict = {r["image_id"]: final.get(r["image_id"]) or got.get((r["image_id"], "初判"), ("", ""))[0]
+               for r in key}
     counts = defaultdict(Counter)
     for r in key:
-        verdict = final.get(r["image_id"]) or got.get((r["image_id"], "初判"), ("", ""))[0]
         for challenge in (r["challenge"], "all"):
-            counts[(r["method"], challenge)][verdict] += 1
+            counts[(r["method"], challenge)][verdict[r["image_id"]]] += 1
+    auto = per_challenge_metrics(args.images, key) if args.images else {}
+    configs = {r["method"]: r["config"] for r in key}
+    rows = []
+    for method in METHODS:
+        for challenge in list(CHALLENGES) + ["all"]:
+            c = counts[(method, challenge)]
+            judged = c["失败"] + c["通过"]
+            lo, hi = wilson(c["失败"], judged)
+            a = auto.get((method, challenge), {})
+            rows.append({"method": METHODS[method], "config": configs[method], "challenge": challenge,
+                         "n": sum(c.values()), "fail": c["失败"], "pass": c["通过"], "unsure": c["无法判断"],
+                         "fail_rate": f"{c['失败'] / judged:.3f}" if judged else "",
+                         "ci95_low": f"{lo:.3f}" if judged else "", "ci95_high": f"{hi:.3f}" if judged else "",
+                         "clip_score": f"{a['clip_score']:.2f}" if a else "",
+                         "image_reward": f"{a['image_reward']:.3f}" if a else ""})
     with open(out / "e5_failure.csv", "w", newline="", encoding="utf-8") as f:
-        w = csv.writer(f)
-        w.writerow(["method", "config", "challenge", "n", "fail", "pass", "unsure", "fail_rate"])
-        configs = {r["method"]: r["config"] for r in key}
-        for method in METHODS:
-            for challenge in list(CHALLENGES) + ["all"]:
-                c = counts[(method, challenge)]
-                judged = c["失败"] + c["通过"]
-                w.writerow([METHODS[method], configs[method], challenge, sum(c.values()), c["失败"],
-                            c["通过"], c["无法判断"], f"{c['失败'] / judged:.3f}" if judged else ""])
-    print(f"written: {out / 'disagreements.csv'}, {out / 'e5_failure.csv'}")
+        w = csv.DictWriter(f, fieldnames=list(rows[0]))
+        w.writeheader()
+        w.writerows(rows)
+
+    status = "final" if not missing and not unresolved else "PROVISIONAL"
+    summary = [
+        f"status: {status}",
+        f"judgments missing or invalid: {len(missing)}" + (f" (e.g. {missing[:5]})" if missing else ""),
+        f"re-check pairs: {len(pairs)}; agreement {agree}/{len(pairs)}"
+        + (f" ({agree / len(pairs):.1%}), Cohen's kappa {kappa:.2f}" if pairs else ""),
+        f"disagreements: {len(disagree)}, unresolved: {len(unresolved)}",
+        "fail_rate = fail / (fail + pass); unsure images are excluded and counted separately;"
+        " ci95 is the Wilson score interval",
+    ]
+    (out / "e5_summary.txt").write_text("\n".join(summary) + "\n", encoding="utf-8")
+    print("\n".join(summary))
+    plot_failure(rows, out)
+    if args.packages:
+        plot_cases(key, verdict, text, Path(args.packages), out, random.Random(args.seed))
+    print(f"written to {out}")
+
+
+def plot_failure(rows, out):
+    """Failure rate with its 95% interval, one panel per challenge."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    colors = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100"]
+    markers = ["o", "s", "^", "D"]
+    names = list(METHODS.values())
+    panels = list(CHALLENGES) + ["all"]
+    titles = {"quantity": "Quantity", "writing": "Writing", "position": "Positioning", "all": "All three"}
+    fig, axes = plt.subplots(1, 4, figsize=(12.5, 3.3), sharey=True, constrained_layout=True)
+    for ax, ch in zip(axes, panels):
+        for i, name in enumerate(names):
+            r = next(r for r in rows if r["method"] == name and r["challenge"] == ch)
+            if not r["fail_rate"]:
+                continue
+            rate, lo, hi = (float(r[k]) for k in ("fail_rate", "ci95_low", "ci95_high"))
+            ax.errorbar(i, rate, yerr=[[rate - lo], [hi - rate]], fmt=markers[i], color=colors[i],
+                        markersize=8, markeredgecolor="white", capsize=3, linewidth=1.5)
+            ax.annotate(f"{rate:.0%}", (i, rate), xytext=(9, 0), textcoords="offset points",
+                        va="center", fontsize=8, color="#52514e")
+        ax.set_xticks(range(len(names)), [n.replace("SDXL + DPM-Solver++", "SDXL base") for n in names],
+                      rotation=30, ha="right", fontsize=8.5)
+        ax.set_xlim(-0.6, len(names) - 0.2)
+        ax.set_ylim(0, 1)
+        ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0))
+        ax.set_title(titles[ch], loc="left", fontsize=10)
+        ax.grid(axis="y", color="#e4e3df")
+        ax.set_axisbelow(True)
+        for side in ("top", "right"):
+            ax.spines[side].set_visible(False)
+    axes[0].set_ylabel("Human-judged failure rate")
+    fig.suptitle("E5: failure rate on the selected PartiPrompts subset (bars: 95% Wilson interval)",
+                 x=0.01, ha="left", fontsize=11)
+    for ext in ("png", "pdf"):
+        fig.savefig(out / f"e5_failure_rate.{ext}", dpi=200, facecolor="white")
+    plt.close(fig)
+
+
+def plot_cases(key, verdict, text, packages, out, rng, per_challenge=2):
+    """Selected examples: prompts where the methods disagree, all four images side by side.
+    The prompts are drawn at random (fixed seed) from those with mixed outcomes."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    paths = {p.stem: p for p in packages.glob("E5判定_*/images/*.png")}
+    by_prompt = defaultdict(dict)
+    for r in key:
+        by_prompt[r["prompt_id"]][r["method"]] = r
+    chosen = []
+    for ch in CHALLENGES:
+        mixed = sorted(pid for pid, ms in by_prompt.items()
+                       if ms[next(iter(ms))]["challenge"] == ch
+                       and {verdict[m["image_id"]] for m in ms.values()} >= {"通过", "失败"})
+        chosen += rng.sample(mixed, min(per_challenge, len(mixed)))
+    if not chosen:
+        return
+    fig = plt.figure(figsize=(10, 3.1 * len(chosen)), layout="constrained")
+    label = {"通过": "pass", "失败": "FAIL", "无法判断": "unsure", "": "not judged"}
+    for sub, pid in zip(fig.subfigures(len(chosen), 1), chosen):
+        rows = by_prompt[pid]
+        prompt = text[pid] if len(text[pid]) < 110 else text[pid][:107] + "..."
+        sub.suptitle(f"[{rows[next(iter(rows))]['challenge'].capitalize()}] {prompt}",
+                     x=0.01, ha="left", fontsize=9)
+        for ax, method in zip(sub.subplots(1, 4), METHODS):
+            r = rows[method]
+            with Image.open(paths[r["image_id"]]) as im:
+                ax.imshow(im)
+            v = verdict[r["image_id"]]
+            ax.set_title(f"{METHODS[method]}: {label[v]}", fontsize=9,
+                         color="#c4372c" if v == "失败" else "#0b0b0b")
+            ax.set_xticks([])
+            ax.set_yticks([])
+    fig.suptitle("E5: selected examples (prompts drawn at random among those where the methods "
+                 "disagree)", x=0.01, ha="left", fontsize=11)
+    for ext in ("png", "pdf"):
+        fig.savefig(out / f"e5_failure_cases.{ext}", dpi=150, facecolor="white")
+    plt.close(fig)
 
 
 def main():
@@ -283,6 +430,9 @@ def main():
     s.add_argument("--sheets", required=True, help="folder with the returned .xlsx sheets")
     s.add_argument("--resolved", help="disagreements.csv with the final column filled in")
     s.add_argument("--out", default="e5_results")
+    s.add_argument("--images", help="E5 output root with per_image_scores.jsonl (auto metrics by challenge)")
+    s.add_argument("--packages", help="the judging packages folder, to draw the failure examples")
+    s.add_argument("--seed", type=int, default=SEED)
     args = ap.parse_args()
     pack(args) if args.cmd == "pack" else score(args)
 
