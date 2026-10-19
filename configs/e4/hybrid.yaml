@@ -1,4 +1,4 @@
-# E4 hybrid refine on the tuning split (docs/plan.md, E4 配置): choose the strength.
+# E4 hybrid refine on the tuning split: choose the strength.
 #   stage 1: SDXL-Turbo, 1 step, 512 px, guidance 0; draft seeds `seeds`
 #   upscale: 512 -> 1024 bicubic in pixel space, VAE-encoded by the img2img pipeline
 #   stage 2: SDXL base img2img, DPM-Solver++ (trailing), nominal 10 steps, CFG 7.5 (the

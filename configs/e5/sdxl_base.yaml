@@ -1,4 +1,4 @@
-# E5 hard prompts (docs/plan.md, E5 规则): the frozen E1 quality point of the baseline
+# E5 hard prompts: the frozen E1 quality point of the baseline
 # (configs/e1/sdxl_base.yaml: 50 steps, CFG 7.5) on the frozen PartiPrompts list.
 # Images are kept at full size so text and counts can be judged; metrics still resize to 512.
 experiment: e5

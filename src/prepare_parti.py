@@ -1,4 +1,4 @@
-"""E5 prompt list from PartiPrompts (docs/plan.md, E5 规则).
+"""E5 prompt list from PartiPrompts: up to 30 hard prompts per challenge, reviewed and frozen.
 
     python -m src.prepare_parti review   # download, sample, write the review sheet
     python -m src.prepare_parti freeze   # check the reviewed sheet, write the frozen prompts
@@ -11,7 +11,7 @@ that do not look like they test the challenge are flagged as a hint only.
 
 A reviewer then sets decision to "replace" (with a reason) for an unsuitable candidate
 and to "keep" for the reserve that takes its place, always using reserves in rank
-order. Every decision is kept in the sheet as the record the plan asks for.
+order. Every decision is kept in the sheet as the record of the selection.
 
 freeze: checks the sheet against those rules and writes configs/e5/parti_prompts.jsonl
 (prompt_id, prompt, challenge), which the E5 configs read through prompts_file.
@@ -36,9 +36,9 @@ FROZEN = E5_DIR / "parti_prompts.jsonl"
 SEED = 2026
 PER_CHALLENGE = 30
 CHALLENGES = {  # challenge -> (short id, what the human judge checks)
-    "Quantity": ("quantity", "指定对象的数量是否正确"),
-    "Writing & Symbols": ("writing", "要求的文本是否准确出现"),
-    "Properties & Positioning": ("position", "指定的相对位置是否成立"),
+    "Quantity": ("quantity", "is the count of the named objects correct"),
+    "Writing & Symbols": ("writing", "does the requested text appear exactly"),
+    "Properties & Positioning": ("position", "does the stated relative position hold"),
 }
 COLUMNS = ["challenge", "rank", "role", "prompt_id", "prompt", "parti_category", "parti_note",
            "judge_checks", "flag", "decision", "reason"]
@@ -91,7 +91,7 @@ def review():
     E5_DIR.mkdir(parents=True, exist_ok=True)
     if REVIEW.exists():
         raise SystemExit(f"{REVIEW} exists; it may hold review decisions, move it away to rebuild")
-    # utf-8-sig so Excel and Numbers open the Chinese columns correctly.
+    # utf-8-sig so spreadsheet apps detect the encoding (prompts contain curly quotes).
     with open(REVIEW, "w", newline="", encoding="utf-8-sig") as f:
         writer = csv.DictWriter(f, fieldnames=COLUMNS)
         writer.writeheader()
