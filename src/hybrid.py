@@ -3,7 +3,7 @@
     python -m src.hybrid --config configs/e4/hybrid.yaml --shard 0 --num-shards 2
     python -m src.hybrid --config configs/e4/hybrid.yaml --timing
 
-Settings follow docs/plan.md (E4 配置). A config uses method: hybrid and
+A config uses method: hybrid and
   draft:         Turbo call arguments (always 512 px; guidance must be 0 as for sdxl_turbo)
   params:        SDXL img2img call arguments of the refine stage (num_inference_steps,
                  guidance_scale, strength); DPM-Solver++ with timestep_spacing

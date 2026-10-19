@@ -1,5 +1,5 @@
-# E5 hard prompts: the frozen E1 quality point of SDXL-Lightning (PR #9,
-# configs/e1/sdxl_lightning.yaml: 4-step checkpoint, guidance 0) on the frozen PartiPrompts list.
+# E5 hard prompts: the frozen E1 quality point of SDXL-Lightning (configs/e1/sdxl_lightning.yaml:
+# 4-step checkpoint, guidance 0) on the frozen PartiPrompts list.
 experiment: e5
 split: parti
 prompts_file: configs/e5/parti_prompts.jsonl

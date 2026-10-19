@@ -1,5 +1,5 @@
 # E5: the four methods' frozen E1 quality points on the 87 frozen PartiPrompts, then
-# CLIP Score and ImageReward (no FID: there are no reference images). About 20 min on A40.
+# CLIP Score and ImageReward (no FID: there are no reference images). About 30 min on A40.
 src.generate --config configs/e5/sdxl_base.yaml
 src.generate --config configs/e5/lcm_lora.yaml
 src.generate --config configs/e5/sdxl_turbo.yaml

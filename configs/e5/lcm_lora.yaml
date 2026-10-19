@@ -1,4 +1,4 @@
-# E5 hard prompts: the frozen E1 quality point of LCM-LoRA (PR #8, configs/e1/lcm_lora.yaml:
+# E5 hard prompts: the frozen E1 quality point of LCM-LoRA (configs/e1/lcm_lora.yaml:
 # 8 steps, guidance 2.0, fused at scale 1.0) on the frozen PartiPrompts list.
 experiment: e5
 split: parti
