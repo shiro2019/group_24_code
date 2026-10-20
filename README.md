@@ -45,8 +45,8 @@ conda env create -f environment.yml
 conda activate ca6127
 ```
 
-All package versions in `environment.yml` are pinned (Python 3.10). torch is the CUDA 12.8 build, and
-transformers must stay at 4.x because ImageReward is not compatible with 5.x.
+All package versions in `environment.yml` are pinned (Python 3.10). torch is the CUDA 12.8
+build, and transformers must stay at 4.x because ImageReward is not compatible with 5.x.
 `python -m src.check_env` checks the GPU, the imports and access to the Hugging Face Hub.
 
 ## Data
@@ -67,7 +67,8 @@ overwrite an existing one.
 
 ## Running
 
-Every run is described by a config file, and every script takes `--config`:
+Every run is described by a config file, and every generation, scoring and timing script
+takes `--config`:
 
 ```bash
 python -m src.generate --config configs/e1/sdxl_base.yaml          # images
@@ -81,17 +82,19 @@ model revisions, scheduler settings and a per-image log of UNet calls and timest
 is refused if the folder was produced with different settings. Metrics are appended to
 `outputs/metrics/metrics.csv`, and per-image scores are written to `per_image_scores.jsonl`
 in each folder. Latency is always measured with `src.timing` (`src.hybrid --timing` for E4)
-on one GPU type (an NVIDIA L40S in our runs); generation times in the logs include no warm-up and are not used.
+on one GPU type, an NVIDIA L40S in our runs: submit timing jobs with `--nodelist=<node>`
+(see `slurm/job.sbatch`), because `src.make_tables` uses the newest timing row whatever its
+`hardware` column says. Generation times in the logs include no warm-up and are not used.
 
 | Experiment | Configs | How to run |
 | --- | --- | --- |
-| E2 | `configs/e2/sdxl_base.yaml`, `lcm_lora.yaml`, `sdxl_turbo.yaml`, `sdxl_lightning.yaml` (`sdxl_lightning_1step.yaml` is exploratory) | `src.generate`, then `src.evaluate --metrics clip,imagereward`, then `python -m src.select_configs --config <file>`; latency with `src.timing --config <file>`; SDXL-Turbo and SDXL-Lightning through `roles.c.workflow e2` (`slurm/chains/c_tuning.txt`) |
-| Selection | `configs/e1/selection_<method>.json` | records written by `src.select_configs` to `outputs/selection/`, with every candidate's scores, and copied to `configs/e1/` when the E1 configs are frozen; `roles.c.workflow freeze` writes the per-point configs in `configs/c_frozen/` |
-| E1 | `configs/e1/<method>.yaml`; `sdxl_base_8step.yaml` (latency-matched reference) and `sdxl_turbo_1024.yaml` (exploratory) | `src.generate`, `src.evaluate --metrics clip,imagereward,fid`, `src.timing`; SDXL-Turbo and SDXL-Lightning through `roles.c.workflow e1` (`slurm/chains/c_final_all.txt`) |
+| E2 | `configs/e2/sdxl_base.yaml`, `lcm_lora.yaml`, `sdxl_turbo.yaml`, `sdxl_lightning.yaml` (`sdxl_lightning_1step.yaml` is exploratory) | `src.generate`, then `src.evaluate --metrics clip,imagereward`, then `python -m src.select_configs --config <file>`; latency with `src.timing --config <file>`; SDXL-Turbo and SDXL-Lightning through `roles.c.workflow e2 --method sdxl_turbo` (or `sdxl_lightning`; `slurm/chains/c_tuning.txt`) |
+| Selection | `configs/e1/selection_<method>.json` | records written by `src.select_configs` to `outputs/selection/`, with every candidate's scores, and copied to `configs/e1/` when the E1 configs are frozen; `roles.c.workflow freeze --selection <record>` writes the per-point configs in `configs/c_frozen/` (called by `e2` for SDXL-Turbo and SDXL-Lightning; steps 5–6 of `slurm/chains/c_final_all.txt` for the baseline and LCM-LoRA) |
+| E1 | `configs/e1/<method>.yaml`; `sdxl_base_8step.yaml` (latency-matched reference) and `sdxl_turbo_1024.yaml` (exploratory) | `src.generate`, `src.evaluate --metrics clip,imagereward,fid`, `src.timing`; SDXL-Turbo and SDXL-Lightning through `roles.c.workflow e1 --method <method>` (`slurm/chains/c_final_all.txt`) |
 | Spacing check | `configs/e2/sdxl_base_spacing.yaml` | `slurm/chains/e2_spacing.txt`, then `src.bootstrap_ci` against the matching E2 points |
-| E3 | `configs/e3/lcm_lora.yaml` (tuning), `eval_lcm_lora.yaml` (evaluation) | unfused LCM-LoRA at 8 steps and guidance 2.0; `src.generate`, then `src.evaluate --metrics clip,imagereward` (tuning) or `clip,imagereward,fid` (evaluation). The two evaluation scales are the selection-rule point and the highest-CLIP point (`configs/e3/selection_lcm_lora.json`) |
+| E3 | `configs/e3/lcm_lora.yaml` (tuning), `eval_lcm_lora.yaml` (evaluation) | unfused LCM-LoRA at 8 steps and guidance 2.0; `src.generate`, then `src.evaluate --metrics clip,imagereward` (tuning) or `clip,imagereward,fid` (evaluation). The two evaluation scales are the selection-rule point and the highest-CLIP point of the tuning sweep, recorded in `configs/e3/selection_lcm_lora.json` (this record is not written by `src.select_configs`) |
 | E4 | `configs/e4/hybrid.yaml`, `draft_only.yaml` (tuning); `eval_hybrid.yaml`, `eval_draft_only.yaml` (evaluation) | `python -m src.hybrid --config <file>`, then `src.evaluate` (`fid` added on evaluation); the strength is chosen with `src.select_configs --config configs/e4/hybrid.yaml` (`configs/e4/selection_hybrid.json`); latency with `src.hybrid --timing` on `hybrid.yaml` and `draft_only.yaml`; `slurm/chains/e4_hybrid.txt`, `e4_eval.txt` |
-| E5 | `configs/e5/<method>.yaml` | `slurm/chains/e5_parti.txt`; human judging with `src.e5_judging` ([docs/e5_judging.md](docs/e5_judging.md)) |
+| E5 | `configs/e5/<method>.yaml` | `slurm/chains/e5_parti.txt`; human judging with `src.e5_judging` ([docs/e5_judging.md](docs/e5_judging.md)); the judges' returned sheets are not included, so failure rates need a new judging round |
 | Diversity | `configs/c_frozen/diversity/<method>.yaml` | `roles.c.workflow diversity --method <method>` (generates, then scores LPIPS, CLIP Score and ImageReward; `slurm/chains/c_final_all.txt`) |
 
 Field-by-field documentation of the config files, the grid syntax and the automatic checks
@@ -101,9 +104,9 @@ is in [configs/README.md](configs/README.md).
 
 `src.select_configs` reads the newest complete scores of an E2 tuning grid and picks the
 **quality point** (the highest ImageReward among the points whose CLIP Score is within 1.0
-of the method's best) and the **lowest-step point** (the fewest steps with the quality point's other settings). Files marked
-`exploratory: true` are never selected. The frozen E1 configs are written from these
-records before any evaluation-split image is generated.
+of the method's best) and the **lowest-step point** (the fewest steps with the quality
+point's other settings). Files marked `exploratory: true` are never selected. The frozen E1
+configs are written from these records before any evaluation-split image is generated.
 
 ### Tables, figures and intervals
 
@@ -116,8 +119,20 @@ python -m src.bootstrap_ci --ref base50=<folder>/per_image_scores.jsonl other=<f
 `src.make_tables` merges the metrics files (keeping the newest row per config and metric)
 and writes the E1, latency, E2, E3, E4, diversity and E5 tables; `src.plot_results` draws
 the report figures from them; `src.bootstrap_ci` gives paired bootstrap 95% intervals for
-CLIP Score and ImageReward. `roles.c.summarize` writes completion checks, sweep plots and
-diversity grids to `outputs/c_handoff/`.
+CLIP Score and ImageReward. The intervals in the report compare, with paths relative to
+`outputs/`: `e1/eval/sdxl_base/steps8_cfg7.5`, `steps4_cfg7.5` and
+`e1/eval/sdxl_turbo/steps{4,1}_cfg0_res1024` against `e1/eval/sdxl_base/steps50_cfg7.5`;
+`e2/tune/sdxl_base/steps25_cfg7.5` against `e2/tune/sdxl_base/steps50_cfg7.5`; and
+`e2_spacing/tune/sdxl_base/steps{4,8,15}_cfg7.5_timestep_spacingleading` against
+`e2/tune/sdxl_base/steps{4,8,15}_cfg7.5`, for example
+
+```bash
+python -m src.bootstrap_ci --ref trailing4=outputs/e2/tune/sdxl_base/steps4_cfg7.5/per_image_scores.jsonl \
+    leading4=outputs/e2_spacing/tune/sdxl_base/steps4_cfg7.5_timestep_spacingleading/per_image_scores.jsonl
+```
+
+`roles.c.summarize` writes completion checks, sweep plots and diversity grids to
+`outputs/c_handoff/`.
 
 ### Tests
 
@@ -125,7 +140,8 @@ diversity grids to `outputs/c_handoff/`.
 python -m unittest tests.test_bootstrap_ci tests.test_e5_judging roles.c.test_workflow
 ```
 
-The tests need no GPU and download no models.
+The tests need no GPU and download no models; they work in temporary folders under
+`outputs/test_tmp/`.
 
 ## Running on a SLURM cluster
 

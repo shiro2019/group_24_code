@@ -5,7 +5,7 @@ Each YAML file describes one set of runs; `src.generate`, `src.evaluate`, `src.t
 
 | Field | Meaning |
 | --- | --- |
-| `experiment` | Experiment ID such as `e1`, `e2` or `smoke`; it sets the output folder. Exploratory runs use their own ID (e.g. `e2_exploratory`, `c_smoke_exploratory`) so they never mix with the main results |
+| `experiment` | Experiment ID such as `e1`, `e2` or `smoke`; it sets the output folder. Exploratory runs use their own ID (e.g. `e2_exploratory`, `c_smoke_exploratory`) so they never mix with the main results; the exploratory SDXL-Turbo 1024 points stay in `e1` and are told apart by the `_res1024` suffix |
 | `split` | `tune` / `eval` / `diversity`, read from `data/splits/<split>.jsonl`; `prompts_file` can point to another prompt file. **Required** even with `prompts_file`, because it sets the output folder (E5 uses `split: parti`) |
 | `prompts_file` | Custom prompt file (JSONL, each line with at least `prompt_id` and `prompt`), used by E5 |
 | `limit` | Use only the first N prompts (for debugging) |
@@ -93,7 +93,7 @@ uses `python -m src.hybrid --config <file> --timing`, with the same protocol as
   `python -m src.bootstrap_ci`.
 - `configs/e5/`: the E5 configs at each method's frozen E1 quality point, the frozen
   PartiPrompts list and its review sheet.
-- `configs/c_frozen/`: per-point E1 configs, diversity configs (`diversity/`) and manifests
+- `configs/c_frozen/`: selection records, per-point E1 configs, diversity configs (`diversity/`) and manifests
   (including the SHA-256 of the data splits) written by `python -m roles.c.workflow freeze`;
   rerunning it stops if the result differs from the stored records.
 - `configs/smoke/`, `configs/c_smoke/`: smoke tests.

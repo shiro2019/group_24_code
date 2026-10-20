@@ -24,8 +24,7 @@ including its workbook and `images/` directory. Keep `_key/` private.
 
 The workbook contains Guide, Primary and Recheck tabs. Judges fill the yellow
 Verdict and Notes cells. Valid verdicts are `pass`, `fail`, and `unsure`. Image
-IDs link to the 512 x 512 images. The key and assignment seed retain the original
-sampling scheme; English labels do not change the random image assignments.
+IDs link to the 512 x 512 images. The image assignment is fixed by `--seed`.
 
 ## Score returned workbooks
 

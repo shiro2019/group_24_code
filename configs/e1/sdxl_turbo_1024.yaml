@@ -3,7 +3,7 @@
 # as the 512 px E1 Turbo runs, so the only change is the generation resolution. Metrics
 # are still computed at 512 px. It checks how much of Turbo's result depends on its native
 # resolution, and gives a native-1024 Turbo reference for the E4 draft (512 draft upscaled
-# to 1024). Output folders end in _res1024; keep them out of the main E1 tables.
+# to 1024). Output folders end in _res1024; they appear in e1_main.csv only as exploratory rows.
 experiment: e1
 split: eval
 seeds: [0]
