@@ -45,7 +45,7 @@ conda env create -f environment.yml
 conda activate ca6127
 ```
 
-All versions in `environment.yml` are pinned. torch is the CUDA 12.8 build, and
+All package versions in `environment.yml` are pinned (Python 3.10). torch is the CUDA 12.8 build, and
 transformers must stay at 4.x because ImageReward is not compatible with 5.x.
 `python -m src.check_env` checks the GPU, the imports and access to the Hugging Face Hub.
 
@@ -56,11 +56,14 @@ python -m src.prepare_data
 ```
 
 This downloads the MS-COCO 2017 validation captions and images and writes, under `data/`,
-the disjoint tuning (500) and evaluation (2,000) splits, the 100-prompt diversity subset
-and each split's 512x512 FID reference images. The split seed is fixed, so the splits are
+the disjoint tuning (500) and evaluation (2,000) splits (the first caption of each image),
+the 100-prompt diversity subset and centre-cropped 512x512 FID reference images for the
+tuning and evaluation splits. The split seed is fixed, so the splits are
 reproducible. The frozen E5 prompts are included in `configs/e5/parti_prompts.jsonl`,
-together with the review sheet `configs/e5/parti_review.csv` that records every decision;
-`python -m src.prepare_parti review` and `freeze` rebuild them from PartiPrompts.
+together with the review sheet `configs/e5/parti_review.csv` that records every decision.
+`python -m src.prepare_parti freeze` rebuilds the prompt list from the review sheet;
+`review` writes a fresh, undecided sheet from the pinned PartiPrompts file and refuses to
+overwrite an existing one.
 
 ## Running
 
@@ -77,19 +80,19 @@ Generation resumes where it stopped and skips existing images. Each output folde
 model revisions, scheduler settings and a per-image log of UNet calls and timesteps; a run
 is refused if the folder was produced with different settings. Metrics are appended to
 `outputs/metrics/metrics.csv`, and per-image scores are written to `per_image_scores.jsonl`
-in each folder. Latency is always measured with `src.timing` on one GPU type (an NVIDIA
-L40S in our runs); generation times in the logs include no warm-up and are not used.
+in each folder. Latency is always measured with `src.timing` (`src.hybrid --timing` for E4)
+on one GPU type (an NVIDIA L40S in our runs); generation times in the logs include no warm-up and are not used.
 
 | Experiment | Configs | How to run |
 | --- | --- | --- |
-| E2 | `configs/e2/sdxl_base.yaml`, `lcm_lora.yaml`, `sdxl_turbo.yaml`, `sdxl_lightning.yaml` (`sdxl_lightning_1step.yaml` is exploratory) | `src.generate`, then `src.evaluate --metrics clip,imagereward`, then `python -m src.select_configs --config <file>`; SDXL-Turbo and SDXL-Lightning through `roles.c.workflow e2` (`slurm/chains/c_tuning.txt`) |
-| Selection | `configs/e1/selection_<method>.json` | records written by `src.select_configs`, with every candidate's scores |
+| E2 | `configs/e2/sdxl_base.yaml`, `lcm_lora.yaml`, `sdxl_turbo.yaml`, `sdxl_lightning.yaml` (`sdxl_lightning_1step.yaml` is exploratory) | `src.generate`, then `src.evaluate --metrics clip,imagereward`, then `python -m src.select_configs --config <file>`; latency with `src.timing --config <file>`; SDXL-Turbo and SDXL-Lightning through `roles.c.workflow e2` (`slurm/chains/c_tuning.txt`) |
+| Selection | `configs/e1/selection_<method>.json` | records written by `src.select_configs` to `outputs/selection/`, with every candidate's scores, and copied to `configs/e1/` when the E1 configs are frozen; `roles.c.workflow freeze` writes the per-point configs in `configs/c_frozen/` |
 | E1 | `configs/e1/<method>.yaml`; `sdxl_base_8step.yaml` (latency-matched reference) and `sdxl_turbo_1024.yaml` (exploratory) | `src.generate`, `src.evaluate --metrics clip,imagereward,fid`, `src.timing`; SDXL-Turbo and SDXL-Lightning through `roles.c.workflow e1` (`slurm/chains/c_final_all.txt`) |
 | Spacing check | `configs/e2/sdxl_base_spacing.yaml` | `slurm/chains/e2_spacing.txt`, then `src.bootstrap_ci` against the matching E2 points |
-| E3 | `configs/e3/lcm_lora.yaml`, `eval_lcm_lora.yaml` | `src.generate`, `src.evaluate` |
-| E4 | `configs/e4/hybrid.yaml`, `draft_only.yaml` (tuning); `eval_hybrid.yaml`, `eval_draft_only.yaml` (evaluation) | `python -m src.hybrid --config <file>` (add `--timing` for latency), then `src.evaluate`; `slurm/chains/e4_hybrid.txt`, `e4_eval.txt` |
+| E3 | `configs/e3/lcm_lora.yaml` (tuning), `eval_lcm_lora.yaml` (evaluation) | unfused LCM-LoRA at 8 steps and guidance 2.0; `src.generate`, then `src.evaluate --metrics clip,imagereward` (tuning) or `clip,imagereward,fid` (evaluation). The two evaluation scales are the selection-rule point and the highest-CLIP point (`configs/e3/selection_lcm_lora.json`) |
+| E4 | `configs/e4/hybrid.yaml`, `draft_only.yaml` (tuning); `eval_hybrid.yaml`, `eval_draft_only.yaml` (evaluation) | `python -m src.hybrid --config <file>`, then `src.evaluate` (`fid` added on evaluation); the strength is chosen with `src.select_configs --config configs/e4/hybrid.yaml` (`configs/e4/selection_hybrid.json`); latency with `src.hybrid --timing` on `hybrid.yaml` and `draft_only.yaml`; `slurm/chains/e4_hybrid.txt`, `e4_eval.txt` |
 | E5 | `configs/e5/<method>.yaml` | `slurm/chains/e5_parti.txt`; human judging with `src.e5_judging` ([docs/e5_judging.md](docs/e5_judging.md)) |
-| Diversity | `configs/c_frozen/diversity/<method>.yaml` | `roles.c.workflow diversity --method <method>`, then `src.evaluate --metrics lpips` |
+| Diversity | `configs/c_frozen/diversity/<method>.yaml` | `roles.c.workflow diversity --method <method>` (generates, then scores LPIPS, CLIP Score and ImageReward; `slurm/chains/c_final_all.txt`) |
 
 Field-by-field documentation of the config files, the grid syntax and the automatic checks
 is in [configs/README.md](configs/README.md).
@@ -97,9 +100,8 @@ is in [configs/README.md](configs/README.md).
 ### Selection rule
 
 `src.select_configs` reads the newest complete scores of an E2 tuning grid and picks the
-**quality point** (the highest ImageReward, unless its CLIP Score is more than 1.0 below the
-method's best, in which case the next one in ImageReward order) and the **lowest-step
-point** (the fewest steps with the quality point's other settings). Files marked
+**quality point** (the highest ImageReward among the points whose CLIP Score is within 1.0
+of the method's best) and the **lowest-step point** (the fewest steps with the quality point's other settings). Files marked
 `exploratory: true` are never selected. The frozen E1 configs are written from these
 records before any evaluation-split image is generated.
 
@@ -114,7 +116,8 @@ python -m src.bootstrap_ci --ref base50=<folder>/per_image_scores.jsonl other=<f
 `src.make_tables` merges the metrics files (keeping the newest row per config and metric)
 and writes the E1, latency, E2, E3, E4, diversity and E5 tables; `src.plot_results` draws
 the report figures from them; `src.bootstrap_ci` gives paired bootstrap 95% intervals for
-CLIP Score and ImageReward.
+CLIP Score and ImageReward. `roles.c.summarize` writes completion checks, sweep plots and
+diversity grids to `outputs/c_handoff/`.
 
 ### Tests
 

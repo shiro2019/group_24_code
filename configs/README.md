@@ -39,8 +39,8 @@ method: lcm_lora
 lora_fuse: false
 lora_scale: 1.0
 params:
-  num_inference_steps: 4
-  guidance_scale: 0.0
+  num_inference_steps: 8
+  guidance_scale: 2.0
 grid:
   lora_scale: [0.25, 0.5, 0.75, 1.0]
 ```
@@ -82,8 +82,11 @@ uses `python -m src.hybrid --config <file> --timing`, with the same protocol as
 
 ## Folders
 
-- `configs/e1/`: every method's frozen E1 configs and selection records `selection_<method>.json`.
-- `configs/e2/`, `configs/e3/`, `configs/e4/`: tuning grids and evaluation configs of each experiment.
+- `configs/e1/`: every method's frozen E1 configs and selection records `selection_<method>.json`,
+  plus the 8-step baseline reference (`sdxl_base_8step.yaml`) and the exploratory SDXL-Turbo
+  1024 config (`sdxl_turbo_1024.yaml`).
+- `configs/e2/`, `configs/e3/`, `configs/e4/`: tuning grids and evaluation configs of each
+  experiment; `configs/e3/` and `configs/e4/` also hold their selection records.
 - `configs/e2/sdxl_base_spacing.yaml`: timestep-spacing check of the baseline ("leading"
   spacing at 4, 8 and 15 steps, experiment `e2_spacing`), compared pairwise with the
   trailing points of the E2 sweep and never used for selection; intervals come from

@@ -1,8 +1,8 @@
-"""Merge the per-account metrics CSVs and build the summary tables for the report.
+"""Merge the metrics CSVs and build the summary tables for the report.
 
-    python -m src.make_tables outputs/metrics/metrics.csv metrics_b.csv metrics_c.csv ...
+    python -m src.make_tables outputs/metrics/metrics.csv [more metrics.csv ...]
 
-Each cluster account appends to its own outputs/metrics/metrics.csv; pass all of them.
+Several metrics.csv files (e.g. from runs on different machines) can be passed together.
 Rows are merged on (experiment, split, method, config, metric), keeping the newest
 timestamp, and smoke-test rows are dropped. Which configs go into each table and their
 settings come from the files in configs/ (frozen points from configs/e1/selection_*.json),

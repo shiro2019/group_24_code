@@ -1,4 +1,4 @@
-"""Export measured Turbo/Lightning metrics and completion checks; never invent missing results."""
+"""Export measured E2/E1/diversity metrics and completion checks; never invent missing results."""
 
 import csv
 import json

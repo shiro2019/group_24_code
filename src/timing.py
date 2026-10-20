@@ -2,9 +2,8 @@
 
     python -m src.timing --config configs/e1/sdxl_base.yaml
 
-Protocol: batch size 1, fp16, warm-up first, timed from the
-pipeline call (text encoding) until the VAE-decoded tensor is ready, with
-torch.cuda.synchronize() on both sides. Run all methods on the same GPU type.
+Protocol: batch size 1, fp16, warm-up first, timed from the pipeline call (text encoding)
+until the VAE-decoded tensor is ready, with torch.cuda.synchronize() on both sides. Run all methods on the same GPU type.
 Two-stage pipelines (E4) are timed by `python -m src.hybrid --config ... --timing`.
 """
 
