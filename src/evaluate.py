@@ -2,9 +2,10 @@
 
     python -m src.evaluate --config configs/smoke/sdxl_base.yaml --metrics clip,imagereward
     python -m src.evaluate --config configs/e1/sdxl_base.yaml --metrics clip,imagereward,fid
-    python -m src.evaluate --config configs/diversity/sdxl_base.yaml --metrics lpips
+    python -m src.evaluate --config configs/c_frozen/diversity/sdxl_base.yaml --metrics lpips
 
-All images are resized to 512x512 before scoring (docs/plan.md section 2).
+All images are resized to 512x512 before scoring, so methods with different native
+resolutions are scored at the same resolution.
 FID uses data/coco_ref/<split>/ as the reference set, so the tune and eval stages
 never share real-image statistics.
 """
