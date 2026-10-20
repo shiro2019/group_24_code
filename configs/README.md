@@ -61,6 +61,7 @@ Lightning 的 `num_inference_steps` 由代码自动设为 `lightning_steps`，�
 
 - `configs/e1/`：各方法冻结的 E1 配置及选择记录 `selection_<方法>.json`。
 - `configs/e2/`、`configs/e3/`、`configs/e4/`：各实验的调参网格与评测配置。
+- `configs/e2/sdxl_base_spacing.yaml`：基线时间步间隔对比（leading，4 / 8 / 15 步），实验名 `e2_spacing`，与 E2 中 trailing 的同名点配对比较，不参与配置选择；区间用 `python -m src.bootstrap_ci` 计算。
 - `configs/c_frozen/`：`python -m roles.c.workflow freeze` 写出的逐点 E1 配置、多样性配置（`diversity/`）和执行清单（含数据划分的 SHA-256）；重复执行时若与已有记录不一致会报错。
 - `configs/smoke/`、`configs/c_smoke/`：冒烟测试。
 

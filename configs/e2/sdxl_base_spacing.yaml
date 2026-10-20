@@ -1,0 +1,18 @@
+# Timestep-spacing ablation for the baseline on the tuning split: SDXL's default
+# "leading" spacing at the E1 guidance (CFG 7.5). The "trailing" counterparts are the
+# matching points of the E2 sweep (configs/e2/sdxl_base.yaml): same prompts, seeds and
+# model revision, so the two differ only in the scheduler's timestep spacing.
+# Not used for configuration selection; E1 keeps trailing spacing.
+experiment: e2_spacing
+split: tune
+seeds: [0]
+method: sdxl_base
+resolution: 1024
+dtype: fp16
+models:
+  stabilityai/stable-diffusion-xl-base-1.0: 462165984030d82259a11f4367a4eed129e94a7b
+params:
+  guidance_scale: 7.5
+grid:
+  num_inference_steps: [4, 8, 15]
+  timestep_spacing: [leading]

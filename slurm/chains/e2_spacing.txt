@@ -1,0 +1,5 @@
+# Baseline timestep-spacing ablation: 3 configs x 500 tuning prompts with "leading"
+# spacing, then scoring. About 1 h on A40, so one job is enough:
+#   sbatch --job-name=e2-spacing slurm/chain.sbatch slurm/chains/e2_spacing.txt 1 2
+src.generate --config configs/e2/sdxl_base_spacing.yaml
+src.evaluate --config configs/e2/sdxl_base_spacing.yaml --metrics clip,imagereward
