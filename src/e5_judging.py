@@ -492,6 +492,7 @@ def plot_cases(key, verdict, text, packages, out, rng, per_challenge=2, status="
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    # Package folders use English names; the first round's packages carry Chinese names.
     paths = {p.stem: p for pattern in ("E5_judge_*/images/*.png", "E5判定_*/images/*.png")
              for p in packages.glob(pattern)}
     by_prompt = defaultdict(dict)

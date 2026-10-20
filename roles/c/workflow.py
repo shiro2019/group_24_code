@@ -1,7 +1,7 @@
 """Run the Turbo/Lightning experiments and diversity runs through src, with auditable freezing.
 
-Run each phase as a SLURM job; this module never submits jobs from compute nodes.
-No model training and no changes to shared generation/evaluation implementations.
+Each phase runs as one SLURM job and calls the src/ modules; this module never submits
+jobs from compute nodes.
 """
 
 import argparse
@@ -73,7 +73,7 @@ def freeze(selection_path):
            or p.get("limit") or p.get("prompts_file") for p in (quality, lowest)):
         raise ValueError("freeze requires full official tuning configs for one method")
     if selection.get("clip_tolerance") != 1.0:
-        raise ValueError("plan requires the preset 1.0 CLIP tolerance")
+        raise ValueError("freeze requires the preset CLIP tolerance of 1.0")
     if method == "lcm_lora" and (quality.get("lora_scale", 1.0) != 1.0
                                  or quality.get("lora_fuse", True) is False):
         raise ValueError("main comparison requires fused default LCM scale 1.0")

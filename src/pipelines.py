@@ -1,4 +1,4 @@
-"""Build diffusers pipelines for each method, following docs/plan.md section 2."""
+"""Build the diffusers pipeline of each method, with its sampler and scheduler settings."""
 
 import torch
 from diffusers import (

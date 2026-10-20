@@ -4,13 +4,12 @@ Run commands from the repository root, with the dependencies in `environment.yml
 installed. The judging workflow uses `openpyxl==3.1.5`, Pillow and matplotlib;
 scoring does not need a GPU.
 
-## Existing Chinese packages
+## Legacy packages
 
-Continue using the packages already distributed. Keep their original `_key/key.csv`:
-image IDs must match the exact package used by the judges. The scorer accepts the
-original `初判` / `复核` tabs and `通过` / `失败` / `无法判断` verdicts, including
-Chinese verdicts in the discussion CSV. New packages use English names and verdicts.
-Do not regenerate packages during an ongoing judging round.
+The scorer also reads packages from an earlier round that use Chinese tab names
+(`初判` / `复核`) and verdicts (`通过` / `失败` / `无法判断`), including in the discussion
+CSV. Score such packages with their own `_key/key.csv`: image IDs must match the exact
+package the judges used. New packages use English names and verdicts.
 
 ## Create a new round
 
@@ -25,8 +24,7 @@ including its workbook and `images/` directory. Keep `_key/` private.
 
 The workbook contains Guide, Primary and Recheck tabs. Judges fill the yellow
 Verdict and Notes cells. Valid verdicts are `pass`, `fail`, and `unsure`. Image
-IDs link to the 512 x 512 images. The key and assignment seed retain the original
-sampling scheme; English labels do not change the random image assignments.
+IDs link to the 512 x 512 images. The image assignment is fixed by `--seed`.
 
 ## Score returned workbooks
 

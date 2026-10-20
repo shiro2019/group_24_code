@@ -1,5 +1,6 @@
-"""Export measured C metrics and completion checks; never invent missing results."""
+"""Export measured E2/E1/diversity metrics and completion checks; never invent missing results."""
 
+import argparse
 import csv
 import json
 import random
@@ -119,6 +120,7 @@ def sweep_artifacts(points, rows, destination):
 
 
 def main():
+    argparse.ArgumentParser(description=__doc__).parse_args()
     out = OUTPUTS_DIR / "c_handoff"
     out.mkdir(parents=True, exist_ok=True)
     rows = latest_rows()

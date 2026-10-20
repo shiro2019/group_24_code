@@ -1,4 +1,4 @@
-"""Apply the config selection rule (docs/plan.md section 3) to tuning-split metrics.
+"""Apply the config selection rule to tuning-split metrics.
 
     python -m src.select_configs --config configs/e2/sdxl_base.yaml
 
@@ -72,7 +72,7 @@ def main():
     if first["method"] == "lcm_lora" and any(
             p.get("lora_scale", 1.0) != 1.0 or p.get("lora_fuse", True) is False for p in points):
         print("warning: E1 uses the fused LCM-LoRA at scale 1.0; points with other settings "
-              "are only a tuned variant (docs/plan.md section 3, rule 4)")
+              "are only a tuned variant and are not used for E1")
 
     table = latest_metrics(args.metrics_csv, first["experiment"], first["split"], first["method"])
     problems = []

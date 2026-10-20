@@ -19,7 +19,7 @@ from PIL import Image
 from src.common import CONFIG_KEYS, check_identity, env_info, expand_grid, load_yaml, now, read_prompts, run_dir
 from src.pipelines import UNetCallCounter, build_pipeline, pipeline_key
 
-# Allowed guidance range per method (docs/plan.md section 2); None means unrestricted.
+# Allowed guidance range per method, as recommended by each model's authors; None means unrestricted.
 GUIDANCE_RANGE = {"sdxl_turbo": (0.0, 0.0), "sdxl_lightning": (0.0, 0.0), "lcm_lora": (0.0, 2.0)}
 
 
